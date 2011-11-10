@@ -1,0 +1,58 @@
+<?xml version="1.0"?>
+<map name="Base Map" type="geocentric" version="2">
+  <options>
+    <terrain>
+      <lighting>true</lighting>
+      <compositor>auto</compositor>
+      <lod_fall_off>6.0</lod_fall_off>
+<!--
+      <lod_blending>true</lod_blending>
+      <max_lod>17</max_lod>
+      <min_tile_range_factor>4.5</min_tile_range_factor>
+      <loading_policy mode="sequential" loading_threads="8" compile_threads="8"/>
+-->
+    </terrain>
+    <!--cache type="tms">
+      <path>/home/dardo/cache</path>
+    </cache-->
+  </options>
+  <image name="BaseImagery" driver="tms">
+    <url>http://mapserver.cmf.nrl.navy.mil/readymap/tiles/1.0.0/10/</url>
+    <l2_cache_size>0</l2_cache_size>
+  </image>
+  <heightfield name="Elevation" driver="tms">
+    <url>http://mapserver.cmf.nrl.navy.mil/readymap/tiles/1.0.0/1/</url>
+    <l2_cache_size>0</l2_cache_size>
+  </heightfield>
+<!--
+  <image name="ReadyMap.org - Imagery" driver="tms">
+    <url>http://readymap.org/readymap/tiles/1.0.0/7/</url>
+    <l2_cache_size>0</l2_cache_size>
+  </image>
+  <elevation name="ReadyMap.org - Elevation" driver="tms">
+    <url>http://readymap.org/readymap/tiles/1.0.0/9/</url>
+    <l2_cache_size>0</l2_cache_size>
+  </elevation>
+
+  <image name="nexrad45min" driver="wms" loading_weight="10">
+    <url>http://mapserver.cmf.nrl.navy.mil/clouds/wms</url>
+    <format>png</format>
+    <layers>clouds</layers>
+    <tile_size>256</tile_size>
+    <srs>EPSG:4326</srs>
+    <transparent>true</transparent>
+    <times>
+        2010-11-01T21:00:00Z,
+        2010-11-02T05:00:00Z,
+        2010-11-02T09:00:00Z,
+        2010-11-02T13:00:00Z,
+        2010-11-02T17:00:00Z,
+        2010-11-02T21:00:00Z,
+        2010-11-03T01:00:00Z,
+        2010-11-03T05:00:00Z
+    </times>
+    <seconds_per_frame>0.25</seconds_per_frame>
+  </image>
+-->
+
+</map>
