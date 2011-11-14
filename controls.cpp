@@ -13,6 +13,7 @@ LonLatLabelControl::LonLatLabelControl( const std::string& value,
     , _lon( 0.0 ), _lat( 0.0 )
 {
     updateLonLat( _lon, _lat );
+    setEncoding( osgText::String::ENCODING_UTF8 );
 };
 
 LonLatLabelControl::LonLatLabelControl( const std::string& value,
@@ -21,6 +22,7 @@ LonLatLabelControl::LonLatLabelControl( const std::string& value,
     , _lon( 0.0 ), _lat( 0.0 )
 {
     updateLonLat( _lon, _lat );
+    setEncoding( osgText::String::ENCODING_UTF8 );
 };
 
 void LonLatLabelControl::updateLonLat( const double lon, const double lat )
@@ -28,7 +30,7 @@ void LonLatLabelControl::updateLonLat( const double lon, const double lat )
     if(( lon != _lon ) || ( lat != _lat ))
     {
         _lon = lon; _lat = lat;
-        setText( lonlat2str( _lon, _lat ), osgText::String::ENCODING_UTF8 );
+        setText( lonlat2str( _lon, _lat ));
     }
 };
 
