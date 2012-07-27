@@ -56,13 +56,13 @@ void CompositeViewer::setGlobalContext( osg::GraphicsContext *context )
     }
 }
 
-osgViewer::View* CompositeViewer::createView( const eq::uint128_t& id,
-    bool overrideRenderer )
+osgViewer::View* CompositeViewer::createOSGView( const eq::uint128_t& id,
+        bool overrideRenderer )
 {
     return new osgView( id, overrideRenderer );
 }
 
-osgViewer::View* CompositeViewer::findViewByID( const eq::uint128_t& id )
+osgViewer::View* CompositeViewer::findOSGViewByID( const eq::uint128_t& id )
 {
     Views views;
     getViews( views );
@@ -77,7 +77,7 @@ osgViewer::View* CompositeViewer::findViewByID( const eq::uint128_t& id )
 }
 
 void CompositeViewer::advance( const uint32_t frameNumber,
-    const FrameData& frameData )
+        const FrameData& frameData )
 {
     _frameStamp->setFrameNumber( frameNumber );
     // reference time has to use osg::Timer because other OSG internals that
@@ -92,7 +92,8 @@ void CompositeViewer::advance( const uint32_t frameNumber,
         _frameStamp->setCalendarTime( now );
 
 #if OSG_VERSION_GREATER_OR_EQUAL( 3, 0, 0 )
-    for( RefViews::iterator vitr = _views.begin( ); vitr != _views.end( ); ++vitr )
+    for( RefViews::iterator vitr = _views.begin( );
+            vitr != _views.end( ); ++vitr )
     {
         osgViewer::View *view = vitr->get( );
         view->getEventQueue( )->frame( _frameStamp->getReferenceTime( ));
@@ -107,7 +108,7 @@ void CompositeViewer::advance( const uint32_t frameNumber,
 }
 
 void CompositeViewer::frameStart( const uint32_t frameNumber,
-    FrameData& frameData, bool preRender )
+        FrameData& frameData, bool preRender )
 {
 //EQINFO << "-----> Viewer::frameStart(" << frameNumber << ")" << std::endl;
 
@@ -116,57 +117,55 @@ void CompositeViewer::frameStart( const uint32_t frameNumber,
     eventTraversal( );
     updateTraversal( );
 
-    if( preRender )
+    if( !preRender )
+        return;
+
+    Scenes scenes;
+    getScenes( scenes );
+
+    for( Scenes::iterator sitr = scenes.begin( );
+            sitr != scenes.end( ); ++sitr)
     {
-        Scenes scenes;
-        getScenes( scenes );
+        osgViewer::Scene* scene = *sitr;
 
-        for( Scenes::iterator sitr = scenes.begin( );
-            sitr != scenes.end( ); 
-            ++sitr) 
-        {   
-            osgViewer::Scene* scene = *sitr;
+        osg::ref_ptr< osgDB::DatabasePager > dp = scene ?
+            scene->getDatabasePager( ) : 0;
+        if( dp.valid( ))
+            dp->signalBeginFrame( getViewerFrameStamp( ));
 
-            osg::ref_ptr< osgDB::DatabasePager > dp = scene ?
-                scene->getDatabasePager( ) : 0;
-            if( dp.valid( ))
-                dp->signalBeginFrame( getViewerFrameStamp( )); 
-
-            osg::ref_ptr< osg::Node > sceneData = scene ?
-                scene->getSceneData( ) : 0;
-            if ( sceneData.valid( ))
-                sceneData->getBound( );
-        }
+        osg::ref_ptr< osg::Node > sceneData = scene ?
+            scene->getSceneData( ) : 0;
+        if ( sceneData.valid( ))
+            sceneData->getBound( );
     }
 
 //EQINFO << "<----- Viewer::frameStart(" << frameNumber << ")" << std::endl;
 }
 
-void CompositeViewer::frameFinish( bool postRender )
+void CompositeViewer::frameDrawFinish( bool postRender )
 {
-//EQINFO << "-----> Viewer::frameFinish( )" << std::endl;
+//EQINFO << "-----> Viewer::frameDrawFinish( )" << std::endl;
 
-    if( postRender )
+    if( !postRender )
+        return;
+
+    Scenes scenes;
+    getScenes( scenes );
+
+    for( Scenes::iterator sitr = scenes.begin( );
+            sitr != scenes.end( ); ++sitr )
     {
-        Scenes scenes;
-        getScenes( scenes );
+        osgViewer::Scene* scene = *sitr;
 
-        for( Scenes::iterator sitr = scenes.begin( );
-            sitr != scenes.end( ); 
-            ++sitr ) 
-        {   
-            osgViewer::Scene* scene = *sitr;
-
-            osg::ref_ptr< osgDB::DatabasePager > dp = scene ?
-                scene->getDatabasePager( ) : 0;
-            if( dp.valid( ))
-                dp->signalEndFrame( );
-        }
-
-        _requestRedraw = false;
+        osg::ref_ptr< osgDB::DatabasePager > dp = scene ?
+            scene->getDatabasePager( ) : 0;
+        if( dp.valid( ))
+            dp->signalEndFrame( );
     }
 
-//EQINFO << "<----- Viewer::frameFinish( )" << std::endl;
+    _requestRedraw = false;
+
+//EQINFO << "<----- Viewer::frameDrawFinish( )" << std::endl;
 }
 
 void CompositeViewer::realize( )

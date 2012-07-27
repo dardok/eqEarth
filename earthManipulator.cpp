@@ -52,7 +52,7 @@ void EarthManipulator::overrideDefaultSettings( )
     settings->bindKey( ACTION_PAN_RIGHT, osgGA::GUIEventAdapter::KEY_Right );
     settings->bindKey( ACTION_PAN_UP, osgGA::GUIEventAdapter::KEY_Up );
     settings->bindKey( ACTION_PAN_DOWN, osgGA::GUIEventAdapter::KEY_Down );
-    
+
     // double click the left button (or CTRL-left button) to zoom in on a point:
     options.clear( );
     options.add( OPTION_GOTO_RANGE_FACTOR, 0.4 );
@@ -61,7 +61,7 @@ void EarthManipulator::overrideDefaultSettings( )
     settings->bindMouseClick( ACTION_GOTO,
         osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON,
         osgGA::GUIEventAdapter::MODKEY_CTRL, options );
-    
+
     // double click the right button (or CTRL-right button) to zoom out to a point
     options.clear( );
     options.add( OPTION_GOTO_RANGE_FACTOR, 2.5 );
@@ -71,7 +71,7 @@ void EarthManipulator::overrideDefaultSettings( )
         osgGA::GUIEventAdapter::RIGHT_MOUSE_BUTTON,
         osgGA::GUIEventAdapter::MODKEY_CTRL, options );
 
-    settings->setThrowingEnabled( true );
+    //settings->setThrowingEnabled( true );
     settings->setLockAzimuthWhilePanning( true );
     settings->setArcViewpointTransitions( true );
     settings->setMouseSensitivity( 2.0 );

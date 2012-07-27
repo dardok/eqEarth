@@ -12,29 +12,29 @@ struct WindowingSystem : public osg::GraphicsContext::WindowingSystemInterface
 WindowingSystem( osg::GraphicsContext *context ) : _context( context ) { }
 
 virtual unsigned int getNumScreens(
-    const osg::GraphicsContext::ScreenIdentifier& screenIdentifier =
-        osg::GraphicsContext::ScreenIdentifier( ))
+        const osg::GraphicsContext::ScreenIdentifier& screenIdentifier =
+            osg::GraphicsContext::ScreenIdentifier( ))
 {
     EQUNIMPLEMENTED;
     return 0;
 }
 
 virtual void getScreenSettings(
-    const osg::GraphicsContext::ScreenIdentifier& screenIdentifier,
+        const osg::GraphicsContext::ScreenIdentifier& screenIdentifier,
         osg::GraphicsContext::ScreenSettings& resolution )
 {
     EQUNIMPLEMENTED;
 }
 
 virtual void enumerateScreenSettings(
-    const osg::GraphicsContext::ScreenIdentifier& screenIdentifier,
+        const osg::GraphicsContext::ScreenIdentifier& screenIdentifier,
         osg::GraphicsContext::ScreenSettingsList& resolutionList )
 {
     EQUNIMPLEMENTED;
 }
 
 virtual osg::GraphicsContext* createGraphicsContext(
-    osg::GraphicsContext::Traits* traits )
+        osg::GraphicsContext::Traits* traits )
 {
     return _context.get( );
 }
@@ -66,10 +66,10 @@ EQINFO << "<===== Window::~Window(" << (void *)this << ")" << std::endl;
 
 void Window::initCapabilities( osg::GraphicsContext *context )
 {
-    static co::base::Lock _wsiLock;
+    static lunchbox::Lock _wsiLock;
     static bool _initialized = false;
 
-    co::base::ScopedMutex<> mutex( _wsiLock );
+    lunchbox::ScopedWrite _mutex( &_wsiLock );
     if( !_initialized )
     {
         // Hack to initialize osgEarth with an existing graphics context
@@ -97,7 +97,9 @@ EQINFO << "-----> Window::configInitGL(" << initID <<
 
     EQASSERT( !_window.valid( ));
 
-    if( eq::Window::configInitGL( initID ))
+    if( !eq::Window::configInitGL( initID ))
+        goto out;
+
     {
         const eq::PixelViewport& pvp = getPixelViewport( );
         const eq::DrawableConfig& dc = getDrawableConfig( );
@@ -121,9 +123,8 @@ EQINFO << "-----> Window::configInitGL(" << initID <<
             traits->sharedContext = sharedWindow->_window;
 
         _window = new osgViewer::GraphicsWindowEmbedded( traits );
-	//_window->createGraphicsThread( );
 
-	static_cast< Node* >( getNode( ))->addGraphicsContext( _window );
+        static_cast< Node* >( getNode( ))->addGraphicsContext( _window );
 
         unsigned int maxTexturePoolSize =
             osg::DisplaySettings::instance( )->getMaxTexturePoolSize( );
@@ -136,10 +137,11 @@ EQINFO << "-----> Window::configInitGL(" << initID <<
             getState( )->setMaxBufferObjectPoolSize( maxBufferObjectPoolSize );
 
         initCapabilities( _window );
-
-        init = true;
     }
 
+    init = true;
+
+out:
     if( !init )
         cleanup( );
 
@@ -156,36 +158,52 @@ bool Window::configExitGL( )
 }
 
 void Window::frameStart( const eq::uint128_t& frameID,
-    const uint32_t frameNumber )
+        const uint32_t frameNumber )
 {
-//EQINFO << "-----> Window::frameStart(" << frameID << ", " << frameNumber << ")" << std::endl;
+//EQINFO << "-----> Window<" << getName( ) << ">::frameStart(" <<
+//    << frameID << ", " << frameNumber << ")" << std::endl;
 
     EQASSERT( _window.valid( ) && _window->valid( ));
 
     // Ensures extension procs are initialized
     _window->makeCurrent( );
 
-    // Runs the IncrementalCompileOperation if it is installed
+    // Runs the IncrementalCompileOperation if installed
     EQ_GL_CALL( _window->runOperations( ));
 
     eq::Window::frameStart( frameID, frameNumber );
 
-//EQINFO << "<----- Window::frameStart(" << frameID << ")" << std::endl;
+//EQINFO << "<----- Window<" << getName( ) << ">::frameStart(" <<
+//    << frameID << ", " << frameNumber << ")" << std::endl;
 }
 
 void Window::frameFinish( const eq::uint128_t& frameID,
-    const uint32_t frameNumber )
+        const uint32_t frameNumber )
 {
-//EQINFO << "-----> Window::frameFinish(" << frameID << ")" << std::endl;
+//EQINFO << "-----> Window<" << getName( ) << ">::frameFinish(" <<
+//    << frameID << ", " << frameNumber << ")" << std::endl;
+
+    eq::Window::frameFinish( frameID, frameNumber );
+
+//EQINFO << "<----- Window<" << getName( ) << ">::frameFinish(" <<
+//    << frameID << ", " << frameNumber << ")" << std::endl;
+}
+
+void Window::frameDrawFinish( const eq::uint128_t& frameID,
+        const uint32_t frameNumber )
+{
+//EQINFO << "-----> Window<" << getName( ) << ">::frameDrawFinish(" <<
+//    << frameID << ", " << frameNumber << ")" << std::endl;
 
     EQASSERT( _window.valid( ) && _window->valid( ));
 
     // For completeness
     _window->releaseContext( );
 
-    eq::Window::frameFinish( frameID, frameNumber );
+    eq::Window::frameDrawFinish( frameID, frameNumber );
 
-//EQINFO << "<----- Window::frameFinish(" << frameID << ")" << std::endl;
+//EQINFO << "<----- Window<" << getName( ) << ">::frameDrawFinish(" <<
+//    << frameID << ", " << frameNumber << ")" << std::endl;
 }
 
 void Window::swapBuffers( )
@@ -201,7 +219,7 @@ void Window::cleanup( )
 {
     if( _window.valid( ))
     {
-	static_cast< Node* >( getNode( ))->removeGraphicsContext( _window );
+        static_cast< Node* >( getNode( ))->removeGraphicsContext( _window );
 
         if( _window->valid( ))
             _window->close( );

@@ -1,6 +1,5 @@
 #pragma once
 
-#define EQ_IGNORE_GLEW
 #include <eq/eq.h>
 
 #include <osg/Matrix>
@@ -40,7 +39,7 @@ inline eq::Matrix4d osgToVmml( const osg::Matrixd& matrix )
 #if 0
     eq::Matrix4d M;
 
-    M( 0,0 ) = matrix( 0,0 ); 
+    M( 0,0 ) = matrix( 0,0 );
     M( 0,1 ) = matrix( 1,0 );
     M( 0,2 ) = matrix( 2,0 );
     M( 0,3 ) = matrix( 3,0 );
@@ -168,7 +167,7 @@ inline int eqKeyToOsg( uint32_t key )
         case eq::KC_CONTROL_R: k = osgGA::GUIEventAdapter::KEY_Control_R; break;
         case eq::KC_ALT_L: k = osgGA::GUIEventAdapter::KEY_Alt_L; break;
         case eq::KC_ALT_R: k = osgGA::GUIEventAdapter::KEY_Alt_R; break;
-	default: k = key; break;
+        default: k = key; break;
     }
     return k;
 }

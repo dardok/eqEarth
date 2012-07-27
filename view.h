@@ -1,6 +1,5 @@
 #pragma once
 
-#define EQ_IGNORE_GLEW
 #include <eq/eq.h>
 
 #include <osgViewer/View>
@@ -29,9 +28,9 @@ public:
         const eq::Vector3d& direction );
     void getWorldPointer( eq::Vector3d& origin, eq::Vector3d& direction ) const;
 
-    void setView( osgViewer::View *view );
-    osgViewer::View* getView( ) { return _view; }
-    const osgViewer::View* getView( ) const { return _view; }
+    void setOSGView( osgViewer::View* view );
+    osgViewer::View* getOSGView( ) { return _view; }
+    const osgViewer::View* getOSGView( ) const { return _view; }
 
 private:
     class Proxy : public eq::fabric::Serializable
@@ -51,7 +50,7 @@ private:
 
         virtual void serialize( co::DataOStream& os,
             const uint64_t dirtyBits );
-        virtual void deserialize( co::DataIStream& is, 
+        virtual void deserialize( co::DataIStream& is,
             const uint64_t dirtyBits );
         virtual void notifyNewVersion() { sync( ); }
 

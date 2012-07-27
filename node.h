@@ -1,6 +1,5 @@
 #pragma once
 
-#define EQ_IGNORE_GLEW
 #include <eq/eq.h>
 
 #include "frameData.h"
@@ -8,6 +7,7 @@
 #include "channel.h"
 
 #include <osgGA/GUIEventHandler>
+#include <osgViewer/Renderer>
 
 namespace eqEarth
 {
@@ -20,16 +20,18 @@ protected:
     virtual ~Node( );
 
 public:
+    const FrameData& getFrameData( ) const { return _frameData; }
+
     void addGraphicsContext( osg::GraphicsContext *context );
     void removeGraphicsContext( osg::GraphicsContext *context );
 
     bool addCameraToView( const eq::uint128_t& id, osg::Camera *camera );
     bool removeCameraFromView( const eq::uint128_t& id, osg::Camera *camera );
 
-    const FrameData& getFrameData( ) const { return _frameData; }
-
+#if 0
     CompositeViewer *getViewer( ) { return _viewer; }
     const CompositeViewer *getViewer( ) const { return _viewer; }
+#endif
 
 protected:
     virtual bool configInit( const eq::uint128_t& initID );
@@ -39,6 +41,8 @@ protected:
         const uint32_t frameNumber );
     virtual void frameFinish( const eq::uint128_t& frameID,
         const uint32_t frameNumber );
+    virtual void frameDrawFinish( const eq::uint128_t& frameID,
+        const uint32_t frameNumber );
 
 private:
     void cleanup( );
@@ -46,9 +50,13 @@ private:
 protected:
     FrameData _frameData;
 
+    lunchbox::Lock _viewer_lock;
     osg::ref_ptr< CompositeViewer > _viewer;
 
+public:
+    void renderLocked( osgViewer::Renderer* renderer ) const;
+
 private:
-    co::base::Lock _viewerlock;
+    mutable lunchbox::Lock _render_lock;
 };
 }

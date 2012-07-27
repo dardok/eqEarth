@@ -4,7 +4,7 @@ namespace eqEarth
 {
 // ----------------------------------------------------------------------------
 
-InitData::InitData( ) 
+InitData::InitData( )
         : _frameDataID( eq::UUID::ZERO )
         , _modelFileName( DEFAULT_MODEL )
 {

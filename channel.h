@@ -1,6 +1,5 @@
 #pragma once
 
-#define EQ_IGNORE_GLEW
 #include <eq/eq.h>
 
 #include "viewer.h"
@@ -21,7 +20,9 @@ protected:
     virtual ~Channel( );
 
 protected:
-    bool connectToView( const eq::uint128_t& id );
+    const FrameData& getFrameData( ) const;
+
+    bool connectCameraToView( const eq::uint128_t& id );
 
     virtual bool configInit( const eq::uint128_t& initID );
     virtual bool configExit( );
@@ -37,26 +38,11 @@ protected:
 
     virtual bool processEvent( const eq::Event& event );
 
-public:
-    osg::Camera* getCamera( ) { return _camera; }
-
 protected:
     osg::ref_ptr< osg::Camera > _camera;
     osg::ref_ptr< osgViewer::Renderer > _renderer;
     eq::uint128_t _sceneID;
     bool _newScene;
-    virtual void applyScene( );
-
-    virtual void applyBuffer( osg::Camera* camera ) const;
-    virtual void applyViewport( osg::Camera* camera ) const;
-    virtual void applyPerspective( osg::Camera* camera ) const;
-    virtual void applyPerspectiveTransform( osg::Camera* camera,
-        const eq::Matrix4d& viewMatrix ) const;
-    virtual void applyScreen( osg::Camera* camera ) const;
-    virtual void applyScreenTransform( osg::Camera* camera,
-        const eq::Matrix4d& viewMatrix ) const;
-
-    inline const FrameData& getFrameData( ) const;
 
     void updateView( );
     void windowPick( uint32_t x, uint32_t y ) const;
@@ -66,7 +52,17 @@ protected:
 private:
     void cleanup( );
 
-private:
-    static co::base::Lock _culllock;
+    void _applyBuffer( osg::Camera* camera ) const;
+    void _applyViewport( osg::Camera* camera ) const;
+
+    void _applyScene( ) const;
+    void _applyPerspective( osg::Camera* camera ) const;
+    void _applyPerspectiveTransform( osg::Camera* camera,
+        const eq::Matrix4d& viewMatrix ) const;
+
+    void _applyView( ) const;
+    void _applyScreen( osg::Camera* camera ) const;
+    void _applyScreenTransform( osg::Camera* camera,
+        const eq::Matrix4d& viewMatrix ) const;
 };
 }

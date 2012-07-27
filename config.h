@@ -1,6 +1,5 @@
 #pragma once
 
-#define EQ_IGNORE_GLEW
 #include <eq/eq.h>
 
 #include "initData.h"
@@ -35,15 +34,20 @@ public:
     virtual bool handleEvent( const eq::ConfigEvent* event );
 
 public:
+    osgUtil::IncrementalCompileOperation*
+        getIncrementalCompileOperation( ) const { return _ico; }
+
+    osgViewer::View* takeOrCreateOSGView( const eq::uint128_t& sceneID );
+    void releaseOSGView( osgViewer::View* view );
+
+#if 0
     CompositeViewer *getViewer( ) { return _viewer; }
     const CompositeViewer *getViewer( ) const { return _viewer; }
-
-    osg::Node* getScene( const eq::uint128_t& sceneID );
-
-    osgViewer::View* takeOrCreateView( const eq::uint128_t& sceneID );
-    void releaseView( osgViewer::View* view );
+#endif
 
 private:
+    osg::Node* getScene( const eq::uint128_t& sceneID );
+
     void cleanup( );
 
 protected:
@@ -51,20 +55,17 @@ protected:
     FrameData _frameData;
 
     osg::ref_ptr< osg::Node > _scene;
-    
-    osg::ref_ptr< osgDB::DatabasePager > _pager;
-    osg::ref_ptr< osgUtil::IncrementalCompileOperation > _ico;
 
+    osg::ref_ptr< osgUtil::IncrementalCompileOperation > _ico;
+    osg::ref_ptr< osgDB::DatabasePager > _pager;
+
+    lunchbox::Lock _viewer_lock;
     osg::ref_ptr< CompositeViewer > _viewer;
     osg::ref_ptr< osgGA::EventQueue > _eventQueue;
 
     osg::ref_ptr< osg::GraphicsContext > _gc;
-    uint32_t _appRenderTick;
 
-public:
-    osgUtil::IncrementalCompileOperation*
-        getIncrementalCompileOperation( ) const { return _ico; }
-    osgDB::DatabasePager* getDatabasePager( ) const { return _pager; }
+    uint32_t _appRenderTick;
 
 private:
     View* selectCurrentView( const eq::uint128_t& viewID );

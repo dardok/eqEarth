@@ -17,59 +17,16 @@
 
 #include <osgEarth/FindNode>
 
-#include <GL/glu.h>
+//#include <GL/glu.h>
 
 #include <osgEarthUtil/ObjectPlacer>
 
+#include <osgEarthDrivers/kml/KML>
+#include <osgEarthDrivers/ocean_surface/OceanSurface>
+#include <osgEarth/ShaderComposition>
+
 #define NFR_AT_RADIUS 0.00001
 #define NFR_AT_DOUBLE_RADIUS 0.0049
-
-
-osg::Geometry* myCreateTexturedQuadGeometry(const osg::Vec3& pos,float width,float height, osg::Image* image, bool useTextureRectangle, bool xyPlane, bool option_flip)
-{
-    bool flip = image->getOrigin()==osg::Image::TOP_LEFT;
-    if (option_flip) flip = !flip;
-
-    if (useTextureRectangle)
-    {
-        osg::Geometry* pictureQuad = osg::createTexturedQuadGeometry(pos,
-                                           osg::Vec3(width,0.0f,0.0f),
-                                           xyPlane ? osg::Vec3(0.0f,height,0.0f) : osg::Vec3(0.0f,0.0f,height),
-                                           0.0f, flip ? image->t() : 0.0, image->s(), flip ? 0.0 : image->t());
-
-        osg::TextureRectangle* texture = new osg::TextureRectangle(image);
-        texture->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
-        texture->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
-
-
-        pictureQuad->getOrCreateStateSet()->setTextureAttributeAndModes(0,
-                                                                        texture,
-                                                                        osg::StateAttribute::ON);
-
-        return pictureQuad;
-    }
-    else
-    {
-        osg::Geometry* pictureQuad = osg::createTexturedQuadGeometry(pos,
-                                           osg::Vec3(width,0.0f,0.0f),
-                                           xyPlane ? osg::Vec3(0.0f,height,0.0f) : osg::Vec3(0.0f,0.0f,height),
-                                           0.0f, flip ? 1.0f : 0.0f , 1.0f, flip ? 0.0f : 1.0f);
-
-        osg::Texture2D* texture = new osg::Texture2D(image);
-        texture->setResizeNonPowerOfTwoHint(false);
-        texture->setFilter(osg::Texture::MIN_FILTER,osg::Texture::LINEAR);
-        texture->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
-        texture->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
-
-
-        pictureQuad->getOrCreateStateSet()->setTextureAttributeAndModes(0,
-                    texture,
-                    osg::StateAttribute::ON);
-
-        return pictureQuad;
-    }
-}
-
 
 namespace eqEarth
 {
@@ -92,7 +49,7 @@ void setPVP( uint32_t width, uint32_t height )
      _traits->height = height;
 }
 
-void clearCameras() { _cameras.clear( ); }
+void clearCameras( ) { _cameras.clear( ); }
 };
 
 static osg::ref_ptr< NullGraphicsContext > ngc =
@@ -113,23 +70,18 @@ void configureAppView( osgViewer::View *view )
 #if 0
     osgGA::CameraManipulator *m = new osgGA::TrackballManipulator;
 /*
-    m->setHomePosition( 
+    m->setHomePosition(
         osg::Vec3d( 0, 0, 10 ),
         osg::Vec3d( 0, 0, 0 ),
         osg::Vec3d( 0, 1, 0 ), false );
 */
 #else
     osgGA::CameraManipulator *m = new EarthManipulator;
-/*
-    m->setHomePosition( 
-        osg::Vec3d( 0, 0, 6000000 ),
-        osg::Vec3d( 0, 0, 0 ),
-        osg::Vec3d( 0, 1, 0 ), false );
-*/
 
-    osgEarth::MapNode* map = osgEarth::MapNode::findMapNode( view->getSceneData( ));
+    osgEarth::MapNode* map =
+        osgEarth::MapNode::findMapNode( view->getSceneData( ));
     if( map )
-        m->setNode( map->getTerrainEngine( ));
+        m->setNode( map );
 #endif
 
     view->setCameraManipulator( m );
@@ -137,7 +89,7 @@ void configureAppView( osgViewer::View *view )
     view->getCamera( )->setComputeNearFarMode(
         osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR );
 
-    _config->releaseView( view );
+    _config->releaseOSGView( view );
 }
 
 virtual eq::VisitorResult visit( eq::View* view )
@@ -145,17 +97,18 @@ virtual eq::VisitorResult visit( eq::View* view )
     View* v = static_cast< View* >( view );
 
     v->setSceneID( 1 );
-    v->setView( _config->takeOrCreateView( 1 ));
+    v->setOSGView( _config->takeOrCreateOSGView( 1 ));
 
-    configureAppView( v->getView( ));
+    configureAppView( v->getOSGView( ));
 
     _lastViewID = v->getID( );
 
     return eq::TRAVERSE_CONTINUE;
 }
 
-Config* _config;
-eq::uint128_t _lastViewID;
+public:
+    Config* _config;
+    eq::uint128_t _lastViewID;
 };
 
 // ----------------------------------------------------------------------------
@@ -176,18 +129,24 @@ EQINFO << "=====> Config::Config(" << (void *)this << ")" << std::endl;
     // initialize the global timer to be relative to the current time.
     osg::Timer::instance( )->setStartTick( );
 
-    osg::ref_ptr< osg::DisplaySettings > ds =  
+    osg::ref_ptr< osg::DisplaySettings > ds =
         osg::DisplaySettings::instance( );
-    ds->setMaxTexturePoolSize( 100000000 );     // size in bytes (~100Mb) 
-    ds->setMaxBufferObjectPoolSize( 200000000 );// size in bytes (~200Mb) 
+    ds->setMaxTexturePoolSize( 100000000 );      // size in bytes (~100Mb)
+    ds->setMaxBufferObjectPoolSize( 200000000 ); // size in bytes (~200Mb)
     ds->setSerializeDrawDispatch( false  );
     ds->setCompileContextsHint( false  );
+#if 1
+    ds->setNumOfDatabaseThreadsHint( 2 );
+    ds->setNumOfHttpDatabaseThreadsHint( 2 );
+#endif
 
     _ico = new osgUtil::IncrementalCompileOperation( );
     _ico->setTargetFrameRate( 60.0f );
 
     _pager = osgDB::DatabasePager::create( );
-    _pager->setIncrementalCompileOperation( _ico );
+    _pager->setUnrefImageDataAfterApplyPolicy( false, false );
+    if( _ico.valid( ))
+        _pager->setIncrementalCompileOperation( _ico );
 }
 
 Config::~Config( )
@@ -208,17 +167,22 @@ EQINFO << "-----> Config::init( )" << std::endl;
     _viewer = new CompositeViewer;
     _viewer->setThreadingModel( osgViewer::ViewerBase::ThreadPerCamera );
     _viewer->setStartTick( osg::Timer::instance( )->getStartTick( ));
-    _viewer->setIncrementalCompileOperation( _ico );
+    if( _ico.valid( ))
+        _viewer->setIncrementalCompileOperation( _ico );
 
-    if( eq::Config::init( _initData.getID( )))
+    if( !eq::Config::init( _initData.getID( )))
+        goto out;
+
     {
         ViewCollector m( this );
+
         accept( m );
 
         if( NULL != selectCurrentView( m._lastViewID ))
             init = true;
     }
 
+out:
     if( !init )
         cleanup( );
 
@@ -246,12 +210,13 @@ uint32_t Config::startFrame( )
     View* view = static_cast< View* >( find< eq::View >( currentViewID ));
     if( view )
     {
+        /* NEAR/FAR */
         osgEarth::MapNode* map = osgEarth::MapNode::findMapNode(
-            view->getView( )->getSceneData( ));
+            view->getOSGView( )->getSceneData( ));
         if( map && map->isGeocentric( ))
         {
             osg::Vec3d eye, center, up;
-            view->getView( )->getCamera( )->getViewMatrix( ).getLookAt(
+            view->getOSGView( )->getCamera( )->getViewMatrix( ).getLookAt(
                 eye, center, up );
             double d = eye.length( );
 
@@ -260,19 +225,19 @@ uint32_t Config::startFrame( )
 
             if( d > rp )
             {
-                double zf = ::sqrt( d * d - rp * rp ); 
+                double zf = ::sqrt( d * d - rp * rp );
                 double nfr = NFR_AT_RADIUS + NFR_AT_DOUBLE_RADIUS *
-                    (( d - rp ) / d ); 
+                    (( d - rp ) / d );
                 double zn = osg::clampAbove( zf * nfr, 1.0 );
 
                 view->setNearFar( zn, zf );
             }
         }
 
+        /* VIEW MATRIX */
         const osgGA::CameraManipulator* m =
-            view->getView( )->getCameraManipulator( );
+            view->getOSGView( )->getCameraManipulator( );
         view->setViewMatrix( osgToVmml( m->getInverseMatrix( )));
-        //_frameData.setViewMatrix( osgToVmml( m->getInverseMatrix( )));
     }
 
     uint32_t ret = eq::Config::startFrame( _frameData.commit( ));
@@ -281,12 +246,17 @@ uint32_t Config::startFrame( )
     {
         if( !_gc.valid( ) && !appInitGL( ))
             EQWARN << "Unable to create application GL context" << std::endl;
-        
-//EQWARN << "app render frame #" << getCurrentFrame( ) << std::endl;
 
-        _viewer->setGlobalContext( _gc );
-        _viewer->frameStart( getCurrentFrame( ), _frameData, false );
-        _viewer->renderingTraversals( );
+        if( _gc.valid( ))
+        {
+            //EQWARN << "app render frame #" << getCurrentFrame( ) << std::endl;
+
+            _viewer->setGlobalContext( _gc );
+
+            _viewer->frameStart( getCurrentFrame( ), _frameData, false );
+
+            _viewer->renderingTraversals( );
+        }
     }
 
     return ret;
@@ -294,8 +264,8 @@ uint32_t Config::startFrame( )
 
 uint32_t Config::finishFrame( )
 {
-    if( _viewer->getNumViews( ) > 0 )
-        _viewer->frameFinish( false );
+    if(( _viewer->getNumViews( ) > 0 ) && _gc.valid( ))
+        _viewer->frameDrawFinish( false );
     else
         _appRenderTick = 0U;
 
@@ -307,7 +277,9 @@ bool Config::mapInitData( const eq::uint128_t& initDataID )
     bool mapped = false;
     if( !_initData.isAttached( ))
     {
-        if( mapObject( &_initData, initDataID ));
+        const uint32_t request = mapObjectNB( &_initData, initDataID,
+            co::VERSION_OLDEST, getApplicationNode( ));
+        if( mapObjectSync( request ))
         {
             unmapObject( &_initData );
             mapped = true;
@@ -336,13 +308,18 @@ bool Config::handleEvent( const eq::ConfigEvent* event )
             handleMouseEvent( event );
             ret = true;
             break;
+
         case eq::Event::KEY_PRESS:
             if( _eventQueue.valid( ))
                 _eventQueue->keyPress( eqKeyToOsg( event->data.key.key ),
                     time );
 
             if( 's' == event->data.key.key )
+            {
                 _frameData.toggleStatistics( );
+                ret = true;
+            }
+
             if( 't' == event->data.key.key )
             {
                 const eq::uint128_t& currentViewID =
@@ -357,15 +334,18 @@ bool Config::handleEvent( const eq::ConfigEvent* event )
                     else
                         view->changeMode( eq::View::MODE_MONO );
                 }
+                ret = true;
             }
+
             if( '1' == event->data.key.key )
             {
-                eq::Canvas* canvas = find< eq::Canvas >( "chunk" );
+                eq::Canvas* canvas = find< eq::Canvas >( "clove" );
                 if( canvas )
                 {
                     int64_t index = canvas->getActiveLayoutIndex( );
                     canvas->useLayout( index ? 0 : 1 );
                 }
+                ret = true;
             }
             break;
 
@@ -409,11 +389,58 @@ hitEvent->hit.z( ), lat_rad, lon_rad, height );
     return ret;
 }
 
+osgViewer::View* Config::takeOrCreateOSGView( const eq::uint128_t& sceneID )
+{
+    const bool needViewerLock = ( getNodes( ).size( ) > 1 );
+    lunchbox::ScopedWrite _mutex( needViewerLock ? &_viewer_lock : 0 );
+
+    osgViewer::View* osgView = NULL; // do *not* use ref_ptr here
+
+    if( _viewer.valid( )) // i.e. isApplicationNode
+    {
+        osgView = _viewer->findOSGViewByID( sceneID );
+        if( osgView )
+        {
+            _viewer->removeView( osgView ); // eqEarth::View still has a ref
+
+            osgView->getCamera( )->setGraphicsContext( 0 );
+            osgView->getCamera( )->setViewport( 0 );
+        }
+    }
+
+    if( !osgView )
+    {
+        osgView = CompositeViewer::createOSGView( sceneID );
+
+        osgView->setSceneData( getScene( sceneID ));
+        osgView->setDatabasePager( _pager );
+
+        osgEarth::Util::SkyNode* sky =
+            osgEarth::findTopMostNodeOfType< osgEarth::Util::SkyNode >(
+                osgView->getSceneData( ));
+        if( sky )
+            sky->attach( osgView );
+    }
+
+    return osgView;
+}
+
+void Config::releaseOSGView( osgViewer::View* view )
+{
+    const bool needViewerLock = ( getNodes( ).size( ) > 1 );
+    lunchbox::ScopedWrite _mutex( needViewerLock ? &_viewer_lock : 0 );
+
+    if( _viewer.valid( )) // i.e. isApplicationNode
+    {
+        view->getCamera( )->setGraphicsContext( 0 );
+        view->getCamera( )->setViewport( 0 );
+
+        _viewer->addView( view );
+    }
+}
+
 osg::Node* Config::getScene( const eq::uint128_t& sceneID )
 {
-    static co::base::Lock lock;
-    co::base::ScopedMutex<> mutex( lock );
-
     if( !_scene.valid( ))
     {
         osg::Group* group = new osg::Group( );
@@ -424,12 +451,22 @@ osg::Node* Config::getScene( const eq::uint128_t& sceneID )
         if( map && map->getMap( )->getProfile( ) &&
             map->getMap()->isGeocentric( ))
         {
+            const osgEarth::Config& externals = map->externalConfig( );
+
             osgEarth::Util::SkyNode* sky =
                 new osgEarth::Util::SkyNode( map->getMap( ));
 
             sky->addUpdateCallback( new SkyUpdateCallback );
 
             group->addChild( sky );
+
+#if 0
+            osgEarth::Drivers::OceanSurfaceNode* ocean =
+                new osgEarth::Drivers::OceanSurfaceNode( map,
+                    externals.child( "ocean" ));
+
+            group->addChild( ocean );
+#endif
 
             osgEarth::Util::ObjectPlacer o( map );
 
@@ -468,56 +505,41 @@ osg::Node* Config::getScene( const eq::uint128_t& sceneID )
                if( n.valid( ))
                   group->addChild( o.placeNode( n, 36.5824, -121.8091, 100 ));
             }
+
 */
+/*
+            {
+                osgEarth::Drivers::KMLOptions kmlo;
+                kmlo.declutter( ) = true;
+                kmlo.defaultIconImage( ) = osgEarth::Util::URI( "http://www.osgearth.org/chrome/site/pushpin_yellow.png" ).getImage( );
+
+               osg::ref_ptr< osg::Node > kml = osgEarth::Drivers::KML::load( osgEarth::Util::URI( "/lustre/cmf/users/d/dkleiner/forks/osgearth/data/BostonBldgs.kmz" ), map, kmlo );
+               if( kml.valid( ))
+                  group->addChild( kml );
+            }
+*/
+
         }
+
+#if 0
+        {
+            char s_source[] =
+                "void osgearth_frag_applyColoring( inout vec4 color ) { \n"
+                "    color = vec4(1.0, 0.0, 0.0, 1.0); \n"
+                "} \n";
+
+            osgEarth::VirtualProgram* vp = new osgEarth::VirtualProgram();
+            vp->setShader( "osgearth_frag_applyColoring",
+                new osg::Shader(osg::Shader::FRAGMENT, s_source),
+                osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE );
+            group->getOrCreateStateSet()->setAttributeAndModes( vp,
+                osg::StateAttribute::ON );
+        }
+#endif
 
         _scene = group;
     }
     return _scene.get( );
-}
-
-osgViewer::View* Config::takeOrCreateView( const eq::uint128_t& sceneID )
-{
-    osgViewer::View* view = NULL; // do *not* use ref_ptr here
-
-    if( _viewer.valid( )) // i.e. isApplicationNode
-    {
-        view = _viewer->findViewByID( sceneID );
-        if( view )
-        {
-            _viewer->removeView( view ); // eqEarth::View still has a ref
-
-            view->getCamera( )->setGraphicsContext( 0 );
-            view->getCamera( )->setViewport( 0 );
-        }
-    }
-
-    if( !view )
-    {
-        view = CompositeViewer::createView( sceneID );
-
-        view->setSceneData( getScene( sceneID ));
-        view->setDatabasePager( getDatabasePager( )); 
-
-        osgEarth::Util::SkyNode* sky =
-            osgEarth::findTopMostNodeOfType< osgEarth::Util::SkyNode >(
-                view->getSceneData( ));
-        if( sky )
-            sky->attach( view );
-    }
-
-    return view;
-}
-
-void Config::releaseView( osgViewer::View* view )
-{   
-    if( _viewer.valid( )) // i.e. isApplicationNode
-    {
-        view->getCamera( )->setGraphicsContext( 0 );
-        view->getCamera( )->setViewport( 0 );
-
-        _viewer->addView( view );
-    }
 }
 
 void Config::cleanup( )
@@ -548,7 +570,7 @@ View* Config::selectCurrentView( const eq::uint128_t& viewID )
     if( view )
     {
         _frameData.setCurrentViewID( viewID );
-        _eventQueue = view->getView( )->getEventQueue( );
+        _eventQueue = view->getOSGView( )->getEventQueue( );
     }
     return view;
 }
@@ -619,13 +641,13 @@ void Config::handleMouseEvent( const eq::ConfigEvent* event )
             itr != events.end( ); ++itr)
         {
             osg::ref_ptr< osgGA::CameraManipulator > m =
-                view->getView( )->getCameraManipulator( );
+                view->getOSGView( )->getCameraManipulator( );
             if( m.valid( ))
             {
                 osg::ref_ptr< osg::Camera > camera =
-                    view->getView( )->getCamera( );
+                    view->getOSGView( )->getCamera( );
 
-                const eq::Matrix4d viewMatrix = 
+                const eq::Matrix4d viewMatrix =
                     eq::Matrix4d( event->data.context.headTransform ) *
                         view->getViewMatrix( );
 
@@ -637,15 +659,15 @@ void Config::handleMouseEvent( const eq::ConfigEvent* event )
 
                 camera->setViewport( 0, 0, pvp.w, pvp.h );
 
-                camera->setProjectionMatrixAsFrustum( 
+                camera->setProjectionMatrixAsFrustum(
                     frustum.left( ), frustum.right( ),
                     frustum.bottom( ), frustum.top( ),
-                    frustum.near_plane( ), frustum.far_plane( )); 
+                    frustum.near_plane( ), frustum.far_plane( ));
 
                 camera->setViewMatrix( vmmlToOsg( viewMatrix ));
 
                 m->handleWithCheckAgainstIgnoreHandledEventsMask(
-                    *itr->get( ), *view->getView( ));
+                    *itr->get( ), *view->getOSGView( ));
 
                 ngc->clearCameras( );
 
@@ -667,7 +689,7 @@ void Config::updateCurrentWorldPointer( const eq::ConfigEvent* event )
 EQWARN << "xy: " << x << ", " << y << " in " << pvp << std::endl;
 #endif
 
-    const eq::Matrix4d viewMatrix = 
+    const eq::Matrix4d viewMatrix =
         eq::Matrix4d( event->data.context.headTransform ) *
             _frameData.getViewMatrix( );
 
@@ -719,7 +741,8 @@ bool Config::appInitGL( bool pbuffer )
         _gc->realize( );
         _gc->makeCurrent( );
 
-        _ico->addGraphicsContext( _gc );
+        if( _ico.valid( ))
+            _ico->addGraphicsContext( _gc );
 
         unsigned int maxTexturePoolSize =
             osg::DisplaySettings::instance( )->getMaxTexturePoolSize( );

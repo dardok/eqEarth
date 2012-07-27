@@ -1,6 +1,5 @@
 #pragma once
 
-#define EQ_IGNORE_GLEW
 #include <eq/eq.h>
 
 #include <osgViewer/GraphicsWindow>
@@ -35,6 +34,8 @@ protected:
     virtual void frameStart( const eq::uint128_t& frameID,
         const uint32_t frameNumber );
     virtual void frameFinish( const eq::uint128_t& frameID,
+        const uint32_t frameNumber );
+    virtual void frameDrawFinish( const eq::uint128_t& frameID,
         const uint32_t frameNumber );
     virtual void swapBuffers( );
 

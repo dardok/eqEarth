@@ -7,7 +7,7 @@ namespace eqEarth
 View::View( eq::Layout* parent )
     : eq::View( parent )
     , _proxy( this )
-    , _sceneID( eq::UUID::ZERO ) 
+    , _sceneID( eq::UUID::ZERO )
     , _viewMatrix( eq::Matrix4d::IDENTITY )
     , _near( 0.01 ), _far( 100.0 )
     , _origin( eq::Vector3d::ZERO )
@@ -74,7 +74,7 @@ void View::getWorldPointer( eq::Vector3d& origin,
     direction = _direction;
 }
 
-void View::setView( osgViewer::View *view )
+void View::setOSGView( osgViewer::View* view )
 {
     _view = view;
 }

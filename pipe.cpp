@@ -21,12 +21,13 @@ EQINFO << "-----> Pipe::configInit(" << initID << ")" << std::endl;
 
     bool init = false;
 
-    if( eq::Pipe::configInit( initID ))
-    {
-        init = true;
-    }
+    if( !eq::Pipe::configInit( initID ))
+        goto out;
 
-    if( !init ) 
+    init = true;
+
+out:
+    if( !init )
         cleanup( );
 
 EQINFO << "<----- Pipe::configInit(" << initID << ")" << std::endl;
@@ -42,20 +43,39 @@ bool Pipe::configExit( )
 }
 
 void Pipe::frameStart( const eq::uint128_t& frameID,
-    const uint32_t frameNumber ) 
+        const uint32_t frameNumber )
 {
-//EQINFO << "-----> Pipe::frameStart("
+//EQINFO << "-----> Pipe<" << getName( ) << ">::frameStart("
 //    << frameID << ", " << frameNumber << ")" << std::endl;
 
     eq::Pipe::frameStart( frameID, frameNumber );
 
-//EQINFO << "<----- Pipe::frameStart(" << frameID << ")" << std::endl;
+//EQINFO << "<----- Pipe<" << getName( ) << ">::frameStart("
+//    << frameID <<  ", " << frameNumber << ")" << std::endl;
 }
 
 void Pipe::frameFinish( const eq::uint128_t& frameID,
-    const uint32_t frameNumber )
+        const uint32_t frameNumber )
 {
+//EQINFO << "-----> Pipe<" << getName( ) << ">::frameFinish("
+//    << frameID << ", " << frameNumber << ")" << std::endl;
+
     eq::Pipe::frameFinish( frameID, frameNumber );
+
+//EQINFO << "<----- Pipe<" << getName( ) << ">::frameFinish("
+//    << frameID <<  ", " << frameNumber << ")" << std::endl;
+}
+
+void Pipe::frameDrawFinish( const eq::uint128_t& frameID,
+        const uint32_t frameNumber )
+{
+//EQINFO << "-----> Pipe<" << getName( ) << ">::frameDrawFinish("
+//    << frameID << ", " << frameNumber << ")" << std::endl;
+
+    eq::Pipe::frameDrawFinish( frameID, frameNumber );
+
+//EQINFO << "<----- Pipe<" << getName( ) << ">::frameDrawFinish("
+//    << frameID <<  ", " << frameNumber << ")" << std::endl;
 }
 
 void Pipe::cleanup( )

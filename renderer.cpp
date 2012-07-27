@@ -4,8 +4,6 @@
 #include <osgViewer/View>
 #include <osgDB/DatabasePager>
 
-#include <iostream>
-
 namespace eqEarth
 {
 // ----------------------------------------------------------------------------
