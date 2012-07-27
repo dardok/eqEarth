@@ -50,7 +50,7 @@ protected:
     osg::ref_ptr< osg::Camera > _camera;
     osg::ref_ptr< osgViewer::Renderer > _renderer;
 
-    osg::ref_ptr< osgViewer::Viewer > _viewer2d;
+    osg::ref_ptr< osgViewer::Viewer > _viewer;
     osg::ref_ptr< osg::Camera > _camera2d;
 
     void updateView( );

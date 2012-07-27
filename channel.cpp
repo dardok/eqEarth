@@ -5,6 +5,7 @@
 #include "node.h"
 #include "window.h"
 #include "view.h"
+#include "viewer.h"
 #include "util.h"
 
 #include <osgViewer/View>
@@ -20,9 +21,11 @@ static lunchbox::Lock _hud_lock;
 
 static osg::Geode* createHUD()
 {
+#if 0
     lunchbox::ScopedWrite _mutex( _hud_lock );
     if( hud )
         return hud;
+#endif
 
         osg::Geode* geode = new osg::Geode();
 
@@ -32,7 +35,7 @@ static osg::Geode* createHUD()
         osg::StateSet* stateset = geode->getOrCreateStateSet();
         stateset->setMode(GL_LIGHTING,osg::StateAttribute::OFF);
 
-        osg::Vec3 position(1650.0f,800.0f,0.0f);
+        osg::Vec3 position(1550.0f,800.0f,0.0f);
         osg::Vec3 delta(0.0f,-120.0f,0.0f);
 
         {
@@ -193,23 +196,26 @@ LBINFO << "-----> Channel::configInit(" << initID <<
         _camera->setReferenceFrame( osg::Transform::ABSOLUTE_RF );
         _camera->setAllowEventFocus( false );
 
-        if( isDestination( ))
+        if( false /*isDestination( )*/)
         {
-            _viewer2d = new osgViewer::Viewer;
-            osg::Camera *camera2d = _viewer2d->getCamera( );
+            LBWARN << "isDestination" << std::endl;
 
-            camera2d = new osg::Camera;
-            camera2d->setColorMask( new osg::ColorMask );
-            camera2d->setViewport( new osg::Viewport );
-            camera2d->setGraphicsContext( gc );
-            camera2d->setComputeNearFarMode(
+            _viewer = new osgViewer::Viewer;
+
+            _camera2d = new osg::Camera;
+            _camera2d->setColorMask( new osg::ColorMask );
+            _camera2d->setViewport( new osg::Viewport );
+            _camera2d->setGraphicsContext( gc );
+            _camera2d->setComputeNearFarMode(
                 osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR );
-            camera2d->setReferenceFrame( osg::Transform::ABSOLUTE_RF );
-            camera2d->setAllowEventFocus( false );
+            _camera2d->setReferenceFrame( osg::Transform::ABSOLUTE_RF );
+            _camera2d->setAllowEventFocus( false );
 
-            camera2d->setClearMask( GL_DEPTH_BUFFER_BIT );
+            _camera2d->setClearMask( GL_DEPTH_BUFFER_BIT );
 
-            _viewer2d->setSceneData( createHUD( ));
+            _viewer->setCamera( _camera2d );
+
+            _viewer->setSceneData( createHUD( ));
         }
     }
 
@@ -328,6 +334,13 @@ void Channel::frameViewStart( const eq::uint128_t& frameID )
 
     eq::Channel::frameViewStart( frameID );
 
+    if( _viewer.valid( ))
+    {
+        _viewer->advance( );
+        _viewer->eventTraversal( );
+        _viewer->updateTraversal( );
+    }
+
 //LBINFO << "<----- Channel<" << getName( ) << ">::frameViewStart("
 //    << frameID << ")" << std::endl;
 }
@@ -349,9 +362,12 @@ void Channel::frameViewFinish( const eq::uint128_t& frameID )
     const FrameData& frameData =
         static_cast< const Node* >( getNode( ))->getFrameData( );
 
-    _applyView( );
+    if( _viewer.valid( ))
+    {
+        _applyView( );
 
-    _viewer->renderingTraversals( );
+        _viewer->renderingTraversals( );
+    }
 
     if( frameData.useStatistics( ))
         drawStatistics( );
