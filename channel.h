@@ -5,6 +5,7 @@
 #include "viewer.h"
 
 #include <osg/Camera>
+#include <osgViewer/Viewer>
 #include <osgViewer/Renderer>
 
 #define CONTROLS
@@ -49,6 +50,9 @@ protected:
     osg::ref_ptr< osg::Camera > _camera;
     osg::ref_ptr< osgViewer::Renderer > _renderer;
 
+    osg::ref_ptr< osgViewer::Viewer > _viewer2d;
+    osg::ref_ptr< osg::Camera > _camera2d;
+
     void updateView( );
     void windowPick( uint32_t x, uint32_t y ) const;
     void worldPick( const eq::Vector3d& origin,
@@ -67,11 +71,9 @@ private:
     void _applyPerspectiveTransform( osg::Camera* camera,
         const eq::Matrix4d& viewMatrix ) const;
 
-#if 0
     void _applyView( ) const;
     void _applyScreen( osg::Camera* camera ) const;
     void _applyScreenTransform( osg::Camera* camera ) const;
-#endif
 };
 }
 

@@ -15,7 +15,6 @@
 
 namespace eqEarth
 {
-#if 0
 static osg::Geode* hud = NULL;
 static lunchbox::Lock _hud_lock;
 
@@ -147,7 +146,6 @@ static osg::Geode* createHUD()
 
     return hud = geode;
 }
-#endif
 
 // ----------------------------------------------------------------------------
 
@@ -195,20 +193,24 @@ LBINFO << "-----> Channel::configInit(" << initID <<
         _camera->setReferenceFrame( osg::Transform::ABSOLUTE_RF );
         _camera->setAllowEventFocus( false );
 
-#if 0
-        _camera2d = new osg::Camera;
-        _camera2d->setColorMask( new osg::ColorMask );
-        _camera2d->setViewport( new osg::Viewport );
-        _camera2d->setGraphicsContext( gc );
-        _camera2d->setComputeNearFarMode(
-            osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR );
-        _camera2d->setReferenceFrame( osg::Transform::ABSOLUTE_RF );
-        _camera2d->setAllowEventFocus( false );
+        if( isDestination( ))
+        {
+            _viewer2d = new osgViewer::Viewer;
+            osg::Camera *camera2d = _viewer2d->getCamera( );
 
-        _camera2d->setClearMask( GL_DEPTH_BUFFER_BIT );
+            camera2d = new osg::Camera;
+            camera2d->setColorMask( new osg::ColorMask );
+            camera2d->setViewport( new osg::Viewport );
+            camera2d->setGraphicsContext( gc );
+            camera2d->setComputeNearFarMode(
+                osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR );
+            camera2d->setReferenceFrame( osg::Transform::ABSOLUTE_RF );
+            camera2d->setAllowEventFocus( false );
 
-        _camera2d->addChild( createHUD( ));
-#endif
+            camera2d->setClearMask( GL_DEPTH_BUFFER_BIT );
+
+            _viewer2d->setSceneData( createHUD( ));
+        }
     }
 
     init = true;
@@ -306,10 +308,6 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
 
     _applyScene( );
 
-#if 0
-    _applyView( );
-#endif
-
     if( _renderer.valid( ))
     {
         const Node *node = static_cast< const Node* >( getNode( ));
@@ -350,6 +348,10 @@ void Channel::frameViewFinish( const eq::uint128_t& frameID )
 
     const FrameData& frameData =
         static_cast< const Node* >( getNode( ))->getFrameData( );
+
+    _applyView( );
+
+    _viewer->renderingTraversals( );
 
     if( frameData.useStatistics( ))
         drawStatistics( );
@@ -576,7 +578,6 @@ void Channel::_applyPerspectiveTransform( osg::Camera* camera,
         eq::Matrix4d( getPerspectiveTransform( )) * viewMatrix ));
 }
 
-#if 0
 void Channel::_applyView( ) const
 {
     EQ_TS_THREAD( _pipeThread );
@@ -601,5 +602,4 @@ void Channel::_applyScreenTransform( osg::Camera* camera ) const
 {
     camera->setViewMatrix( vmmlToOsg( eq::Matrix4d( getOrthoTransform( ))));
 }
-#endif
 }
