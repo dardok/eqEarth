@@ -21,27 +21,27 @@ int EQEarth::run( )
     server = new eq::Server( );
     if( !connectServer( server ))
     {
-        EQERROR << "Client::connectServer failed" << std::endl;
+        LBERROR << "Client::connectServer failed" << std::endl;
         goto out;
     }
 
     config = static_cast< Config* >( server->chooseConfig( configParams ));
     if( !config )
     {
-        EQERROR << "Server::chooseConfig failed" << std::endl;
+        LBERROR << "Server::chooseConfig failed" << std::endl;
         goto out_disconnect;
     }
 
     config->setInitData( _initData );
     if( !config->init( ))
     {
-        EQERROR << "Config::init failed" << std::endl;
+        LBERROR << "Config::init failed" << std::endl;
         goto out_release;
     }
 
     if( config->getError( ))
     {
-        EQERROR << "Config::init error : " << config->getError( ) << std::endl;
+        LBERROR << "Config::init error : " << config->getError( ) << std::endl;
         goto out_exit;
     }
 
@@ -56,14 +56,14 @@ int EQEarth::run( )
 
 out_exit:
     if( !config->exit( ))
-        EQWARN << "Config::exit failed" << std::endl;
+        LBWARN << "Config::exit failed" << std::endl;
 
 out_release:
     server->releaseConfig( config );
 
 out_disconnect:
     if( !disconnectServer( server ))
-        EQWARN << "Client::disconnectServer failed" << std::endl;
+        LBWARN << "Client::disconnectServer failed" << std::endl;
 
 out:
     server = 0;

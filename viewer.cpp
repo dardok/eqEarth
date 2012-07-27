@@ -108,9 +108,9 @@ void CompositeViewer::advance( const uint32_t frameNumber,
 }
 
 void CompositeViewer::frameStart( const uint32_t frameNumber,
-        FrameData& frameData, bool preRender )
+        const FrameData& frameData, bool preRender )
 {
-//EQINFO << "-----> Viewer::frameStart(" << frameNumber << ")" << std::endl;
+//LBINFO << "-----> Viewer::frameStart(" << frameNumber << ")" << std::endl;
 
     advance( frameNumber, frameData );
 
@@ -139,12 +139,12 @@ void CompositeViewer::frameStart( const uint32_t frameNumber,
             sceneData->getBound( );
     }
 
-//EQINFO << "<----- Viewer::frameStart(" << frameNumber << ")" << std::endl;
+//LBINFO << "<----- Viewer::frameStart(" << frameNumber << ")" << std::endl;
 }
 
 void CompositeViewer::frameDrawFinish( bool postRender )
 {
-//EQINFO << "-----> Viewer::frameDrawFinish( )" << std::endl;
+//LBINFO << "-----> Viewer::frameDrawFinish( )" << std::endl;
 
     if( !postRender )
         return;
@@ -165,11 +165,11 @@ void CompositeViewer::frameDrawFinish( bool postRender )
 
     _requestRedraw = false;
 
-//EQINFO << "<----- Viewer::frameDrawFinish( )" << std::endl;
+//LBINFO << "<----- Viewer::frameDrawFinish( )" << std::endl;
 }
 
 void CompositeViewer::realize( )
 {
-    EQASSERT( false );
+    LBASSERT( false );
 }
 }

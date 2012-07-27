@@ -22,11 +22,11 @@ protected:
 public:
     const FrameData& getFrameData( ) const { return _frameData; }
 
-    void addGraphicsContext( osg::GraphicsContext *context );
-    void removeGraphicsContext( osg::GraphicsContext *context );
+    void addGraphicsContext( osg::GraphicsContext* context );
+    void removeGraphicsContext( osg::GraphicsContext* context );
 
-    bool addCameraToView( const eq::uint128_t& id, osg::Camera *camera );
-    bool removeCameraFromView( const eq::uint128_t& id, osg::Camera *camera );
+    void addChannelToOSGView( const eq::uint128_t& id, Channel* channel );
+    void removeChannelFromOSGView( const eq::uint128_t& id, Channel* channel );
 
 #if 0
     CompositeViewer *getViewer( ) { return _viewer; }
@@ -49,6 +49,7 @@ private:
 
 protected:
     FrameData _frameData;
+    uint32_t _frameNumber;
 
     lunchbox::Lock _viewer_lock;
     osg::ref_ptr< CompositeViewer > _viewer;

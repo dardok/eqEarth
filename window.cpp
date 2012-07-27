@@ -15,7 +15,7 @@ virtual unsigned int getNumScreens(
         const osg::GraphicsContext::ScreenIdentifier& screenIdentifier =
             osg::GraphicsContext::ScreenIdentifier( ))
 {
-    EQUNIMPLEMENTED;
+    LBUNIMPLEMENTED;
     return 0;
 }
 
@@ -23,14 +23,14 @@ virtual void getScreenSettings(
         const osg::GraphicsContext::ScreenIdentifier& screenIdentifier,
         osg::GraphicsContext::ScreenSettings& resolution )
 {
-    EQUNIMPLEMENTED;
+    LBUNIMPLEMENTED;
 }
 
 virtual void enumerateScreenSettings(
         const osg::GraphicsContext::ScreenIdentifier& screenIdentifier,
         osg::GraphicsContext::ScreenSettingsList& resolutionList )
 {
-    EQUNIMPLEMENTED;
+    LBUNIMPLEMENTED;
 }
 
 virtual osg::GraphicsContext* createGraphicsContext(
@@ -56,12 +56,12 @@ osg::observer_ptr< osg::GraphicsContext > _context;
 Window::Window( eq::Pipe* parent )
     : eq::Window( parent )
 {
-EQINFO << "=====> Window::Window(" << (void *)this << ")" << std::endl;
+LBINFO << "=====> Window::Window(" << (void *)this << ")" << std::endl;
 }
 
 Window::~Window( )
 {
-EQINFO << "<===== Window::~Window(" << (void *)this << ")" << std::endl;
+LBINFO << "<===== Window::~Window(" << (void *)this << ")" << std::endl;
 }
 
 void Window::initCapabilities( osg::GraphicsContext *context )
@@ -89,13 +89,13 @@ bool Window::configInit( const eq::uint128_t& initID )
 
 bool Window::configInitGL( const eq::uint128_t& initID )
 {
-EQINFO << "-----> Window::configInitGL(" << initID <<
+LBINFO << "-----> Window::configInitGL(" << initID <<
     ", " << getPixelViewport( ) <<
     ", " << getViewport( ) << ")" << std::endl;
 
     bool init = false;
 
-    EQASSERT( !_window.valid( ));
+    LBASSERT( !_window.valid( ));
 
     if( !eq::Window::configInitGL( initID ))
         goto out;
@@ -145,7 +145,7 @@ out:
     if( !init )
         cleanup( );
 
-EQINFO << "<----- Window::configInitGL(" << initID << ")" << std::endl;
+LBINFO << "<----- Window::configInitGL(" << initID << ")" << std::endl;
 
     return init;
 }
@@ -160,10 +160,10 @@ bool Window::configExitGL( )
 void Window::frameStart( const eq::uint128_t& frameID,
         const uint32_t frameNumber )
 {
-//EQINFO << "-----> Window<" << getName( ) << ">::frameStart(" <<
+//LBINFO << "-----> Window<" << getName( ) << ">::frameStart("
 //    << frameID << ", " << frameNumber << ")" << std::endl;
 
-    EQASSERT( _window.valid( ) && _window->valid( ));
+    LBASSERT( _window.valid( ) && _window->valid( ));
 
     // Ensures extension procs are initialized
     _window->makeCurrent( );
@@ -173,36 +173,36 @@ void Window::frameStart( const eq::uint128_t& frameID,
 
     eq::Window::frameStart( frameID, frameNumber );
 
-//EQINFO << "<----- Window<" << getName( ) << ">::frameStart(" <<
+//LBINFO << "<----- Window<" << getName( ) << ">::frameStart("
 //    << frameID << ", " << frameNumber << ")" << std::endl;
 }
 
 void Window::frameFinish( const eq::uint128_t& frameID,
         const uint32_t frameNumber )
 {
-//EQINFO << "-----> Window<" << getName( ) << ">::frameFinish(" <<
+//LBINFO << "-----> Window<" << getName( ) << ">::frameFinish("
 //    << frameID << ", " << frameNumber << ")" << std::endl;
 
     eq::Window::frameFinish( frameID, frameNumber );
 
-//EQINFO << "<----- Window<" << getName( ) << ">::frameFinish(" <<
+//LBINFO << "<----- Window<" << getName( ) << ">::frameFinish("
 //    << frameID << ", " << frameNumber << ")" << std::endl;
 }
 
 void Window::frameDrawFinish( const eq::uint128_t& frameID,
         const uint32_t frameNumber )
 {
-//EQINFO << "-----> Window<" << getName( ) << ">::frameDrawFinish(" <<
+//LBINFO << "-----> Window<" << getName( ) << ">::frameDrawFinish("
 //    << frameID << ", " << frameNumber << ")" << std::endl;
 
-    EQASSERT( _window.valid( ) && _window->valid( ));
+    LBASSERT( _window.valid( ) && _window->valid( ));
 
     // For completeness
     _window->releaseContext( );
 
     eq::Window::frameDrawFinish( frameID, frameNumber );
 
-//EQINFO << "<----- Window<" << getName( ) << ">::frameDrawFinish(" <<
+//LBINFO << "<----- Window<" << getName( ) << ">::frameDrawFinish("
 //    << frameID << ", " << frameNumber << ")" << std::endl;
 }
 

@@ -35,7 +35,7 @@ public:
 
 public:
     osgUtil::IncrementalCompileOperation*
-        getIncrementalCompileOperation( ) const { return _ico; }
+        getIncrementalCompileOperation( ) const { return _ico.get( ); }
 
     osgViewer::View* takeOrCreateOSGView( const eq::uint128_t& sceneID );
     void releaseOSGView( osgViewer::View* view );
@@ -46,7 +46,7 @@ public:
 #endif
 
 private:
-    osg::Node* getScene( const eq::uint128_t& sceneID );
+    osg::Group* getScene( const eq::uint128_t& sceneID );
 
     void cleanup( );
 
@@ -54,7 +54,7 @@ protected:
     InitData _initData;
     FrameData _frameData;
 
-    osg::ref_ptr< osg::Node > _scene;
+    osg::ref_ptr< osg::Group > _scene;
 
     osg::ref_ptr< osgUtil::IncrementalCompileOperation > _ico;
     osg::ref_ptr< osgDB::DatabasePager > _pager;

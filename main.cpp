@@ -14,20 +14,20 @@ int main( const int argc, char** argv )
 
     if( !eq::init( argc, argv, &nodeFactory ))
     {
-        EQERROR << "eq::init failed" << std::endl;
+        LBERROR << "eq::init failed" << std::endl;
         goto err;
     }
 
     if( !initData.parseCommandLine( argv, argc ))
     {
-        EQERROR << "InitData::parseCommandLine failed" << std::endl;
+        LBERROR << "InitData::parseCommandLine failed" << std::endl;
         goto err;
     }
 
     client = new eqEarth::EQEarth( initData );
     if( !client->initLocal( argc, argv ))
     {
-        EQERROR << "Client::initLocal failed" << std::endl;
+        LBERROR << "Client::initLocal failed" << std::endl;
         goto out;
     }
 
@@ -35,14 +35,14 @@ int main( const int argc, char** argv )
 
     client->exitLocal( );
 
-    EQASSERTINFO( client->getRefCount( ) == 1,
+    LBASSERTINFO( client->getRefCount( ) == 1,
         "Client still referenced by " << client->getRefCount( ) - 1 );
 
 out:
     client = 0;
 
     if( !eq::exit( ))
-        EQWARN << "eq::exit failed" << std::endl;
+        LBWARN << "eq::exit failed" << std::endl;
 
 err:
     eqEarth::exitErrors( );

@@ -97,7 +97,9 @@ virtual eq::VisitorResult visit( eq::View* view )
     View* v = static_cast< View* >( view );
 
     v->setSceneID( 1 );
-    v->setOSGView( _config->takeOrCreateOSGView( 1 ));
+    v->setOverlayID( 1 );
+
+    v->setOSGView( _config->takeOrCreateOSGView( v->getSceneID( )));
 
     configureAppView( v->getOSGView( ));
 
@@ -117,7 +119,7 @@ Config::Config( eq::ServerPtr parent )
     : eq::Config( parent )
     , _appRenderTick( 0U )
 {
-EQINFO << "=====> Config::Config(" << (void *)this << ")" << std::endl;
+LBINFO << "=====> Config::Config(" << (void *)this << ")" << std::endl;
 
     //srandom( time( NULL ));
     srandom( 1 );
@@ -151,12 +153,12 @@ EQINFO << "=====> Config::Config(" << (void *)this << ")" << std::endl;
 
 Config::~Config( )
 {
-EQINFO << "<===== Config::~Config(" << (void *)this << ")" << std::endl;
+LBINFO << "<===== Config::~Config(" << (void *)this << ")" << std::endl;
 }
 
 bool Config::init( )
 {
-EQINFO << "-----> Config::init( )" << std::endl;
+LBINFO << "-----> Config::init( )" << std::endl;
 
     registerObject( &_frameData );
     _initData.setFrameDataID( _frameData.getID( ));
@@ -186,7 +188,7 @@ out:
     if( !init )
         cleanup( );
 
-EQINFO << "<----- Config::init( )" << std::endl;
+LBINFO << "<----- Config::init( )" << std::endl;
 
     return init;
 }
@@ -210,14 +212,16 @@ uint32_t Config::startFrame( )
     View* view = static_cast< View* >( find< eq::View >( currentViewID ));
     if( view )
     {
+        osgViewer::View* osgView = view->getOSGView( );
+        LBASSERT( osgView );
+
         /* NEAR/FAR */
         osgEarth::MapNode* map = osgEarth::MapNode::findMapNode(
-            view->getOSGView( )->getSceneData( ));
+            osgView->getSceneData( ));
         if( map && map->isGeocentric( ))
         {
-            osg::Vec3d eye, center, up;
-            view->getOSGView( )->getCamera( )->getViewMatrix( ).getLookAt(
-                eye, center, up );
+            osg::Vec3d eye, c, u;
+            osgView->getCamera( )->getViewMatrix( ).getLookAt( eye, c, u );
             double d = eye.length( );
 
             double rp = map->getMap( )->
@@ -235,8 +239,7 @@ uint32_t Config::startFrame( )
         }
 
         /* VIEW MATRIX */
-        const osgGA::CameraManipulator* m =
-            view->getOSGView( )->getCameraManipulator( );
+        const osgGA::CameraManipulator* m = osgView->getCameraManipulator( );
         view->setViewMatrix( osgToVmml( m->getInverseMatrix( )));
     }
 
@@ -245,11 +248,11 @@ uint32_t Config::startFrame( )
     if(( _viewer->getNumViews( ) > 0 ) && ( ++_appRenderTick > 1 ))
     {
         if( !_gc.valid( ) && !appInitGL( ))
-            EQWARN << "Unable to create application GL context" << std::endl;
+            LBWARN << "Unable to create application GL context" << std::endl;
 
         if( _gc.valid( ))
         {
-            //EQWARN << "app render frame #" << getCurrentFrame( ) << std::endl;
+            //LBWARN << "app render frame #" << getCurrentFrame( ) << std::endl;
 
             _viewer->setGlobalContext( _gc );
 
@@ -287,7 +290,7 @@ bool Config::mapInitData( const eq::uint128_t& initDataID )
     }
     else
     {
-        EQASSERT( _initData.getID( ) == initDataID );
+        LBASSERT( _initData.getID( ) == initDataID );
         mapped = true;
     }
     return mapped;
@@ -360,7 +363,7 @@ bool Config::handleEvent( const eq::ConfigEvent* event )
             const ConfigEvent* hitEvent =
                 static_cast< const ConfigEvent* >( event );
 
-            EQINFO << std::fixed << hitEvent << " from " <<
+            LBINFO << std::fixed << hitEvent << " from " <<
                 hitEvent->data.originator << std::endl;
 #if 0
 if( _map.valid( ))
@@ -375,7 +378,7 @@ hitEvent->hit.z( ), lat_rad, lon_rad, height );
         double lat_deg = osg::RadiansToDegrees( lat_rad );
         double lon_deg = osg::RadiansToDegrees( lon_rad );
 
-        EQWARN << "\tHIT(" << lat_deg << ", " << lon_deg << ")" << std::endl;
+        LBWARN << "\tHIT(" << lat_deg << ", " << lon_deg << ")" << std::endl;
 }
 #endif
             ret = true;
@@ -425,22 +428,24 @@ osgViewer::View* Config::takeOrCreateOSGView( const eq::uint128_t& sceneID )
     return osgView;
 }
 
-void Config::releaseOSGView( osgViewer::View* view )
+void Config::releaseOSGView( osgViewer::View* osgView )
 {
     const bool needViewerLock = ( getNodes( ).size( ) > 1 );
     lunchbox::ScopedWrite _mutex( needViewerLock ? &_viewer_lock : 0 );
 
     if( _viewer.valid( )) // i.e. isApplicationNode
     {
-        view->getCamera( )->setGraphicsContext( 0 );
-        view->getCamera( )->setViewport( 0 );
+        osgView->getCamera( )->setGraphicsContext( 0 );
+        osgView->getCamera( )->setViewport( 0 );
 
-        _viewer->addView( view );
+        _viewer->addView( osgView );
     }
 }
 
-osg::Node* Config::getScene( const eq::uint128_t& sceneID )
+osg::Group* Config::getScene( const eq::uint128_t& sceneID )
 {
+    LBASSERT( sceneID == 1 ); // TODO : multiple scenes
+
     if( !_scene.valid( ))
     {
         osg::Group* group = new osg::Group( );
@@ -686,7 +691,7 @@ void Config::updateCurrentWorldPointer( const eq::ConfigEvent* event )
     float y = pvp.h - static_cast< float >( event->data.pointer.y ) + pvp.y;
 
 #if 0
-EQWARN << "xy: " << x << ", " << y << " in " << pvp << std::endl;
+LBWARN << "xy: " << x << ", " << y << " in " << pvp << std::endl;
 #endif
 
     const eq::Matrix4d viewMatrix =
@@ -697,7 +702,7 @@ EQWARN << "xy: " << x << ", " << y << " in " << pvp << std::endl;
     const eq::Matrix4d projectionMatrix = frustum.compute_matrix( );
 
     eq::Vector3d p1, p2;
-    EQCHECK(
+    LBCHECK(
         gluUnProject( x, y, 0, // near plane
             viewMatrix.array, projectionMatrix.array, &pvp.x,
             &p1.x( ), &p1.y( ), &p1.z( ))
@@ -708,7 +713,7 @@ EQWARN << "xy: " << x << ", " << y << " in " << pvp << std::endl;
 
     const eq::uint128_t& viewID = event->data.context.view.identifier;
     View* view = static_cast< View* >( find< eq::View >( viewID ));
-    EQASSERT( NULL != view );
+    LBASSERT( NULL != view );
     view->setWorldPointer( p1, p2 );
 #endif
 }

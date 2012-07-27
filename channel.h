@@ -19,30 +19,35 @@ public:
 protected:
     virtual ~Channel( );
 
+public:
+    osg::Camera* getCamera( ) { return _camera.get( ); }
+    const osg::Camera* getCamera( ) const { return _camera.get( ); }
+
 protected:
     const FrameData& getFrameData( ) const;
-
-    bool connectCameraToView( const eq::uint128_t& id );
 
     virtual bool configInit( const eq::uint128_t& initID );
     virtual bool configExit( );
 
+#if 0
     virtual void frameStart( const eq::uint128_t& frameID,
         const uint32_t frameNumber );
-    virtual void frameViewStart( const eq::uint128_t& frameID );
+    virtual void frameFinish( const eq::uint128_t& frameID,
+        const uint32_t frameNumber );
+    virtual void frameDrawFinish( const eq::uint128_t& frameID,
+        const uint32_t frameNumber );
+#endif
     virtual void frameClear( const eq::uint128_t& frameID );
     virtual void frameDraw( const eq::uint128_t& frameID );
     virtual void frameViewFinish( const eq::uint128_t& frameID );
-    virtual void frameDrawFinish( const eq::uint128_t& frameID,
-        const uint32_t frameNumber );
+    virtual void frameViewStart( const eq::uint128_t& frameID );
 
     virtual bool processEvent( const eq::Event& event );
 
 protected:
+    eq::uint128_t _sceneID;
     osg::ref_ptr< osg::Camera > _camera;
     osg::ref_ptr< osgViewer::Renderer > _renderer;
-    eq::uint128_t _sceneID;
-    bool _newScene;
 
     void updateView( );
     void windowPick( uint32_t x, uint32_t y ) const;
@@ -52,6 +57,8 @@ protected:
 private:
     void cleanup( );
 
+    void connectCameraToScene( const eq::uint128_t& id );
+
     void _applyBuffer( osg::Camera* camera ) const;
     void _applyViewport( osg::Camera* camera ) const;
 
@@ -60,9 +67,11 @@ private:
     void _applyPerspectiveTransform( osg::Camera* camera,
         const eq::Matrix4d& viewMatrix ) const;
 
+#if 0
     void _applyView( ) const;
     void _applyScreen( osg::Camera* camera ) const;
-    void _applyScreenTransform( osg::Camera* camera,
-        const eq::Matrix4d& viewMatrix ) const;
+    void _applyScreenTransform( osg::Camera* camera ) const;
+#endif
 };
 }
+

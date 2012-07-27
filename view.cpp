@@ -8,6 +8,7 @@ View::View( eq::Layout* parent )
     : eq::View( parent )
     , _proxy( this )
     , _sceneID( eq::UUID::ZERO )
+    , _overlayID( eq::UUID::ZERO )
     , _viewMatrix( eq::Matrix4d::IDENTITY )
     , _near( 0.01 ), _far( 100.0 )
     , _origin( eq::Vector3d::ZERO )
@@ -25,12 +26,21 @@ View::~View( )
 EQINFO << "<===== View::~View(" << (void *)this << ")" << std::endl;
 }
 
-void View::setSceneID( const co::base::uint128_t& id )
+void View::setSceneID( const eq::uint128_t& id )
 {
     if( id != _sceneID )
     {
         _sceneID = id;
         _proxy.setDirty( Proxy::DIRTY_SCENE );
+    }
+}
+
+void View::setOverlayID( const eq::uint128_t& id )
+{
+    if( id != _overlayID )
+    {
+        _overlayID = id;
+        _proxy.setDirty( Proxy::DIRTY_OVERLAY );
     }
 }
 
@@ -74,15 +84,12 @@ void View::getWorldPointer( eq::Vector3d& origin,
     direction = _direction;
 }
 
-void View::setOSGView( osgViewer::View* view )
-{
-    _view = view;
-}
-
 void View::Proxy::serialize( co::DataOStream& os, const uint64_t dirtyBits )
 {
     if( dirtyBits & DIRTY_SCENE )
         os << _view->_sceneID;
+    if( dirtyBits & DIRTY_OVERLAY )
+        os << _view->_overlayID;
     if( dirtyBits & DIRTY_CAMERA )
         os << _view->_viewMatrix;
     if( dirtyBits & DIRTY_NEARFAR )
@@ -95,6 +102,8 @@ void View::Proxy::deserialize( co::DataIStream& is, const uint64_t dirtyBits )
 {
     if( dirtyBits & DIRTY_SCENE )
         is >> _view->_sceneID;
+    if( dirtyBits & DIRTY_OVERLAY )
+        is >> _view->_overlayID;
     if( dirtyBits & DIRTY_CAMERA )
     {
         is >> _view->_viewMatrix;
