@@ -28,12 +28,12 @@ static osg::Geode* createHUD()
 {
     osg::Geode* geode = new osg::Geode();
 
-    std::string timesFont("fonts/arial.ttf");
+    std::string timesFont("/afs/cmf/project/dc/sys/share/OpenSceneGraph-Data/fonts/arial.ttf");
 
     osg::StateSet* stateset = geode->getOrCreateStateSet();
     stateset->setMode(GL_LIGHTING,osg::StateAttribute::OFF);
 
-    osg::Vec3 position(1750.0f,800.0f,0.0f);
+    osg::Vec3 position(5000.0f,400.0f,0.0f);
     osg::Vec3 delta(0.0f,-120.0f,0.0f);
 
     {
@@ -42,7 +42,7 @@ static osg::Geode* createHUD()
 
         text->setFont(timesFont);
         text->setPosition(position);
-        text->setText("   HUD   ");
+        text->setText("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
 
         position += delta;
     }
@@ -147,8 +147,6 @@ LBINFO << "-----> Channel::configInit(" << initID <<
             _camera2d->setAllowEventFocus( false );
 
             _camera2d->setClearMask( GL_DEPTH_BUFFER_BIT );
-
-            //_viewer->setSceneData( createHUD( ));
         }
     }
 
@@ -255,16 +253,17 @@ void Channel::frameViewStart( const eq::uint128_t& frameID )
     {
         if( _first )
         {
-            const eq::PixelViewport& pvp = getPixelViewport( );
-            const eq::Viewport& vp = getViewport( );
-            _camera2d->setViewport( 0, 0, pvp.w / vp.w, pvp.h / vp.h );
-            _camera2d->setViewMatrix( osg::Matrix::identity( ));
+            _applyView( _camera2d );
 
+#if 0
+            _viewer->setSceneData( createHUD( ));
+#else
             ControlCanvas* cs = ControlCanvas::get( _viewer );
 
             createControls( cs );
 
             _viewer->setSceneData( cs );
+#endif
 
             _first = false;
         }
@@ -555,7 +554,7 @@ void Channel::_applyView( osg::Camera* camera )
     EQ_TS_THREAD( _pipeThread );
 
     _applyBuffer( camera );
-    _applyViewport2d( camera );
+    _applyViewport( camera );
     _applyScreen( camera );
     _applyScreenTransform( camera );
 }
@@ -629,15 +628,14 @@ void Channel::_applyScreen( osg::Camera* camera )
 {
     const eq::Frustumf& screen = getScreenFrustum( );
     //LBWARN << "screen = " << screen << std::endl;
-    camera->setProjectionMatrixAsOrtho(
+    camera->setProjectionMatrixAsOrtho2D(
         screen.left( ), screen.right( ),
-        screen.bottom( ), screen.top( ),
-        screen.near_plane( ), screen.far_plane( ));
+        screen.bottom( ), screen.top( ));
 }
 
 void Channel::_applyScreenTransform( osg::Camera* camera )
 {
-    //camera->setViewMatrix( vmmlToOsg( getOrthoTransform( )));
+    camera->setViewMatrix( vmmlToOsg( getOrthoTransform( )));
 }
 
 
