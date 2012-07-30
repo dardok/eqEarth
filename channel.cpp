@@ -9,145 +9,80 @@
 #include "util.h"
 
 #include <osgViewer/View>
-#include <osg/CullSettings>
-#include <osgEarth/MapNode>
+#include <osgDB/ReadFile>
+
+#include <osgEarthUtil/Controls>
+#include <osgEarthSymbology/Color>
 
 #include <GL/glu.h>
 
 namespace eqEarth
 {
-static osg::Geode* hud = NULL;
-static lunchbox::Lock _hud_lock;
+using namespace osgEarth::Symbology;
+using namespace osgEarth::Util::Controls;
+
+
+void createControls( ControlCanvas* );
 
 static osg::Geode* createHUD()
 {
-#if 0
-    lunchbox::ScopedWrite _mutex( _hud_lock );
-    if( hud )
-        return hud;
-#endif
+    osg::Geode* geode = new osg::Geode();
 
-        osg::Geode* geode = new osg::Geode();
+    std::string timesFont("fonts/arial.ttf");
 
-        std::string timesFont("fonts/arial.ttf");
+    osg::StateSet* stateset = geode->getOrCreateStateSet();
+    stateset->setMode(GL_LIGHTING,osg::StateAttribute::OFF);
 
-        // turn lighting off for the text and disable depth test to ensure it's always ontop.
-        osg::StateSet* stateset = geode->getOrCreateStateSet();
-        stateset->setMode(GL_LIGHTING,osg::StateAttribute::OFF);
+    osg::Vec3 position(1750.0f,800.0f,0.0f);
+    osg::Vec3 delta(0.0f,-120.0f,0.0f);
 
-        osg::Vec3 position(1550.0f,800.0f,0.0f);
-        osg::Vec3 delta(0.0f,-120.0f,0.0f);
+    {
+        osgText::Text* text = new  osgText::Text;
+        geode->addDrawable( text );
 
+        text->setFont(timesFont);
+        text->setPosition(position);
+        text->setText("   HUD   ");
+
+        position += delta;
+    }
+    {
+        osg::BoundingBox bb;
+        for(unsigned int i=0;i<geode->getNumDrawables();++i)
         {
-            osgText::Text* text = new  osgText::Text;
-            geode->addDrawable( text );
-
-            text->setFont(timesFont);
-            text->setPosition(position);
-            text->setText("Head Up Displays are simple :-)");
-
-            position += delta;
-        }    
-
-
-        {
-            osgText::Text* text = new  osgText::Text;
-            geode->addDrawable( text );
-
-            text->setFont(timesFont);
-            text->setPosition(position);
-            text->setText("All you need to do is create your text in a subgraph.");
-
-            position += delta;
-        }    
-
-
-        {
-            osgText::Text* text = new  osgText::Text;
-            geode->addDrawable( text );
-
-            text->setFont(timesFont);
-            text->setPosition(position);
-            text->setText("Then place an osg::Camera above the subgraph\n"
-                          "to create an orthographic projection.\n");
-
-            position += delta;
-        } 
-
-        {
-            osgText::Text* text = new  osgText::Text;
-            geode->addDrawable( text );
-
-            text->setFont(timesFont);
-            text->setPosition(position);
-            text->setText("Set the Camera's ReferenceFrame to ABSOLUTE_RF to ensure\n"
-                          "it remains independent from any external model view matrices.");
-
-            position += delta;
-        } 
-
-        {
-            osgText::Text* text = new  osgText::Text;
-            geode->addDrawable( text );
-
-            text->setFont(timesFont);
-            text->setPosition(position);
-            text->setText("And set the Camera's clear mask to just clear the depth buffer.");
-
-            position += delta;
-        }    
-
-        {
-            osgText::Text* text = new  osgText::Text;
-            geode->addDrawable( text );
-
-            text->setFont(timesFont);
-            text->setPosition(position);
-            text->setText("And finally set the Camera's RenderOrder to POST_RENDER\n"
-                          "to make sure it's drawn last.");
-
-            position += delta;
-        }    
-
-
-        {
-            osg::BoundingBox bb;
-            for(unsigned int i=0;i<geode->getNumDrawables();++i)
-            {
-                bb.expandBy(geode->getDrawable(i)->getBound());
-            }
-
-            osg::Geometry* geom = new osg::Geometry;
-
-            osg::Vec3Array* vertices = new osg::Vec3Array;
-            float depth = bb.zMin()-0.1;
-            vertices->push_back(osg::Vec3(bb.xMin(),bb.yMax(),depth));
-            vertices->push_back(osg::Vec3(bb.xMin(),bb.yMin(),depth));
-            vertices->push_back(osg::Vec3(bb.xMax(),bb.yMin(),depth));
-            vertices->push_back(osg::Vec3(bb.xMax(),bb.yMax(),depth));
-            geom->setVertexArray(vertices);
-
-            osg::Vec3Array* normals = new osg::Vec3Array;
-            normals->push_back(osg::Vec3(0.0f,0.0f,1.0f));
-            geom->setNormalArray(normals);
-            geom->setNormalBinding(osg::Geometry::BIND_OVERALL);
-
-            osg::Vec4Array* colors = new osg::Vec4Array;
-            colors->push_back(osg::Vec4(1.0f,1.0,0.8f,0.2f));
-            geom->setColorArray(colors);
-            geom->setColorBinding(osg::Geometry::BIND_OVERALL);
-
-            geom->addPrimitiveSet(new osg::DrawArrays(GL_QUADS,0,4));
-
-            osg::StateSet* stateset = geom->getOrCreateStateSet();
-            stateset->setMode(GL_BLEND,osg::StateAttribute::ON);
-            //stateset->setAttribute(new osg::PolygonOffset(1.0f,1.0f),osg::StateAttribute::ON);
-            stateset->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
-
-            geode->addDrawable(geom);
+            bb.expandBy(geode->getDrawable(i)->getBound());
         }
 
-    return hud = geode;
+        osg::Geometry* geom = new osg::Geometry;
+
+        osg::Vec3Array* vertices = new osg::Vec3Array;
+        float depth = bb.zMin()-0.1;
+        vertices->push_back(osg::Vec3(bb.xMin(),bb.yMax(),depth));
+        vertices->push_back(osg::Vec3(bb.xMin(),bb.yMin(),depth));
+        vertices->push_back(osg::Vec3(bb.xMax(),bb.yMin(),depth));
+        vertices->push_back(osg::Vec3(bb.xMax(),bb.yMax(),depth));
+        geom->setVertexArray(vertices);
+
+        osg::Vec3Array* normals = new osg::Vec3Array;
+        normals->push_back(osg::Vec3(0.0f,0.0f,1.0f));
+        geom->setNormalArray(normals);
+        geom->setNormalBinding(osg::Geometry::BIND_OVERALL);
+
+        osg::Vec4Array* colors = new osg::Vec4Array;
+        colors->push_back(osg::Vec4(1.0f,1.0,0.8f,0.2f));
+        geom->setColorArray(colors);
+        geom->setColorBinding(osg::Geometry::BIND_OVERALL);
+
+        geom->addPrimitiveSet(new osg::DrawArrays(GL_QUADS,0,4));
+
+        osg::StateSet* stateset = geom->getOrCreateStateSet();
+        stateset->setMode(GL_BLEND,osg::StateAttribute::ON);
+        stateset->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
+
+        geode->addDrawable(geom);
+    }
+
+    return geode;
 }
 
 // ----------------------------------------------------------------------------
@@ -155,6 +90,7 @@ static osg::Geode* createHUD()
 Channel::Channel( eq::Window* parent )
     : eq::Channel( parent )
     , _sceneID( eq::UUID::ZERO )
+    , _first( true )
 {
 LBINFO << "=====> Channel::Channel(" << (void *)this << ")" << std::endl;
 }
@@ -196,13 +132,12 @@ LBINFO << "-----> Channel::configInit(" << initID <<
         _camera->setReferenceFrame( osg::Transform::ABSOLUTE_RF );
         _camera->setAllowEventFocus( false );
 
-        if( false /*isDestination( )*/)
+        if( isDestination( ))
         {
-            LBWARN << "isDestination" << std::endl;
-
             _viewer = new osgViewer::Viewer;
+            _viewer->setThreadingModel( osgViewer::ViewerBase::SingleThreaded );
 
-            _camera2d = new osg::Camera;
+            _camera2d = _viewer->getCamera( );
             _camera2d->setColorMask( new osg::ColorMask );
             _camera2d->setViewport( new osg::Viewport );
             _camera2d->setGraphicsContext( gc );
@@ -213,9 +148,7 @@ LBINFO << "-----> Channel::configInit(" << initID <<
 
             _camera2d->setClearMask( GL_DEPTH_BUFFER_BIT );
 
-            _viewer->setCamera( _camera2d );
-
-            _viewer->setSceneData( createHUD( ));
+            //_viewer->setSceneData( createHUD( ));
         }
     }
 
@@ -295,31 +228,15 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
 
     //eq::Channel::frameDraw( frameID );
 
-    const View *view = static_cast< const View* >( getView( ));
+    const View* view = static_cast< const View* >( getView( ));
     LBASSERT( view );
 
-    if( view->getSceneID( ) != _sceneID )
-        connectCameraToScene( view->getSceneID( ));
+    connectCameraToScene( view->getSceneID( ));
 
-    double near, far;
-    view->getNearFar( near, far );
-/*
-    double r = far - near;
-
-    const eq::Range &range = getRange( );
-    near += r * range.start;
-    far = near + ( r * range.end );
-*/
-    setNearFar( near, far );
-
-    _applyScene( );
+    _applyScene( _camera );
 
     if( _renderer.valid( ))
-    {
-        const Node *node = static_cast< const Node* >( getNode( ));
-
-        node->renderLocked( _renderer );
-    }
+        static_cast< const Node* >( getNode( ))->renderLocked( _renderer );
 
     updateView( );
 
@@ -336,7 +253,32 @@ void Channel::frameViewStart( const eq::uint128_t& frameID )
 
     if( _viewer.valid( ))
     {
-        _viewer->advance( );
+        if( _first )
+        {
+            const eq::PixelViewport& pvp = getPixelViewport( );
+            const eq::Viewport& vp = getViewport( );
+            _camera2d->setViewport( 0, 0, pvp.w / vp.w, pvp.h / vp.h );
+            _camera2d->setViewMatrix( osg::Matrix::identity( ));
+
+            ControlCanvas* cs = ControlCanvas::get( _viewer );
+
+            createControls( cs );
+
+            _viewer->setSceneData( cs );
+
+            _first = false;
+        }
+
+        const FrameData& frameData =
+            static_cast< const Node* >( getNode( ))->getFrameData( );
+
+        _viewer->advance( frameData.getSimulationTime( ));
+
+        const time_t calendar = frameData.getCalendarTime( );
+        struct tm now;
+        if( NULL != gmtime_r( &calendar, &now ))
+            _viewer->getViewerFrameStamp( )->setCalendarTime( now );
+
         _viewer->eventTraversal( );
         _viewer->updateTraversal( );
     }
@@ -353,22 +295,21 @@ void Channel::frameViewFinish( const eq::uint128_t& frameID )
 #if 0
     unsigned int contextID =
         _camera->getGraphicsContext( )->getState( )->getContextID( );
-    osg::GL2Extensions::GL2Extensions *gl2e =
+    osg::GL2Extensions::GL2Extensions* gl2e =
         osg::GL2Extensions::Get( contextID, true );
 
     gl2e->glUseProgram( 0 );
 #endif
 
-    const FrameData& frameData =
-        static_cast< const Node* >( getNode( ))->getFrameData( );
-
     if( _viewer.valid( ))
     {
-        _applyView( );
+        _applyView( _camera2d );
 
         _viewer->renderingTraversals( );
     }
 
+    const FrameData& frameData =
+        static_cast< const Node* >( getNode( ))->getFrameData( );
     if( frameData.useStatistics( ))
         drawStatistics( );
 
@@ -380,23 +321,69 @@ void Channel::frameViewFinish( const eq::uint128_t& frameID )
 
 bool Channel::processEvent( const eq::Event& event )
 {
-#if 0
-    switch( event.type )
+    if( isDestination( ) && _viewer.valid( ))
     {
-        case eq::Event::CHANNEL_POINTER_MOTION:
-        case eq::Event::CHANNEL_POINTER_BUTTON_PRESS:
-        case eq::Event::CHANNEL_POINTER_BUTTON_RELEASE:
-            const eq::PixelViewport& pvp = event.context.pvp;
+        osg::ref_ptr< osgGA::EventQueue > eventQueue =
+            _viewer->getEventQueue( );
 
-            uint32_t x = event.pointer.x + pvp.x;
-            uint32_t y = pvp.h - event.pointer.y + pvp.y;
+        const double time =
+            static_cast< double >( getConfig( )->getTime( )) / 1000.;
 
-LBWARN << "xy: " << x << ", " << y << " in pvp " << pvp << std::endl;
+        const eq::PixelViewport& pvp = event.context.pvp;
+        const eq::Viewport& vp = event.context.vp;
+        const uint32_t x = event.pointer.x + pvp.x + ( vp.x * ( pvp.w / vp.w ));
+        const uint32_t y = pvp.h - event.pointer.y + pvp.y;
 
-            windowPick( x, y );
-            break;
+        switch( event.type )
+        {
+            case eq::Event::WINDOW_POINTER_WHEEL:
+            {
+                osgGA::GUIEventAdapter::ScrollingMotion sm =
+                    osgGA::GUIEventAdapter::SCROLL_NONE;
+                if( event.pointer.xAxis > 0 )
+                    sm = osgGA::GUIEventAdapter::SCROLL_UP;
+                else if( event.pointer.xAxis < 0 )
+                    sm = osgGA::GUIEventAdapter::SCROLL_DOWN;
+                else if( event.pointer.yAxis > 0 )
+                    sm = osgGA::GUIEventAdapter::SCROLL_RIGHT;
+                else if( event.pointer.yAxis < 0 )
+                    sm = osgGA::GUIEventAdapter::SCROLL_LEFT;
+                eventQueue->mouseScroll( sm, time );
+                break;
+            }
+            case eq::Event::CHANNEL_POINTER_MOTION:
+LBWARN << "CHANNEL_POINTER_MOTION(" << x << ", " << y << ")" << std::endl;
+                eventQueue->mouseMotion( x, y, time );
+                break;
+            case eq::Event::CHANNEL_POINTER_BUTTON_PRESS:
+            {
+                const unsigned int b = eqButtonToOsg( event.pointer.button );
+                if( b <= 3 )
+                    eventQueue->mouseButtonPress( x, y, b, time );
+                //windowPick( x, y );
+                break;
+            }
+            case eq::Event::CHANNEL_POINTER_BUTTON_RELEASE:
+            {
+                const unsigned int b = eqButtonToOsg( event.pointer.button );
+                if( b <= 3 )
+                    eventQueue->mouseButtonRelease( x, y, b, time );
+                break;
+            }
+            case eq::Event::KEY_PRESS:
+            {
+                const int osgKey = eqKeyToOsg( event.key.key );
+                eventQueue->keyPress( osgKey, time );
+            }
+            case eq::Event::KEY_RELEASE:
+            {
+                const int osgKey = eqKeyToOsg( event.key.key );
+                eventQueue->keyRelease( osgKey, time );
+            }
+            default:
+                break;
+        }
     }
-#endif
 
     return eq::Channel::processEvent( event );
 }
@@ -404,7 +391,7 @@ LBWARN << "xy: " << x << ", " << y << " in pvp " << pvp << std::endl;
 void Channel::updateView( )
 {
 #if 0
-    View *v = static_cast< View* >( getView( ));
+    View* v = static_cast< View* >( getView( ));
     if( v->getID( ) == getFrameData( ).getCurrentViewID( ))
     {
         eq::Vector3d origin, direction;
@@ -514,19 +501,26 @@ void Channel::cleanup( )
     if( _camera.valid( ))
         connectCameraToScene( eq::UUID::ZERO );
     _camera = 0;
+
+    _camera2d = 0;
+    _viewer = 0;
 }
 
 void Channel::connectCameraToScene( const eq::uint128_t& id )
 {
+    // TODO : reusing the same camera between osgViews costs expensive
+    // remove/add operations, make cameras per eq::View and find the
+    // right one to use on every frameDraw.
+
     if( id != _sceneID )
     {
-        Node *node = static_cast< Node* >( getNode( ));
+        Node* node = static_cast< Node* >( getNode( ));
 
         Window::initCapabilities( _camera->getGraphicsContext( ));
 
         if( eq::UUID::ZERO != _sceneID )
         {
-            node->removeChannelFromOSGView( _sceneID, this );
+            node->removeCameraFromOSGView( _sceneID, _camera );
 
             _camera->setRenderer( 0 );
             _renderer = 0;
@@ -536,7 +530,7 @@ void Channel::connectCameraToScene( const eq::uint128_t& id )
 
         if( eq::UUID::ZERO != _sceneID )
         {
-            node->addChannelToOSGView( _sceneID, this );
+            node->addCameraToOSGView( _sceneID, _camera );
 
             _renderer =
                 static_cast< osgViewer::Renderer* >( _camera->getRenderer( ));
@@ -546,9 +540,29 @@ void Channel::connectCameraToScene( const eq::uint128_t& id )
     }
 }
 
-void Channel::_applyBuffer( osg::Camera* camera ) const
+void Channel::_applyScene( osg::Camera* camera )
 {
-    const Window *window = static_cast< const Window* >( getWindow( ));
+    EQ_TS_THREAD( _pipeThread );
+
+    _applyBuffer( camera );
+    _applyViewport( camera );
+    _applyPerspective( camera );
+    _applyPerspectiveTransform( camera );
+}
+
+void Channel::_applyView( osg::Camera* camera )
+{
+    EQ_TS_THREAD( _pipeThread );
+
+    _applyBuffer( camera );
+    _applyViewport2d( camera );
+    _applyScreen( camera );
+    _applyScreenTransform( camera );
+}
+
+void Channel::_applyBuffer( osg::Camera* camera )
+{
+    const Window* window = static_cast< const Window* >( getWindow( ));
     if(( const_cast< Channel* >( this )->getFrameBufferObject( ) == 0 ) &&
         ( window->getSystemWindow( )->getFrameBufferObject( ) == 0 ))
     {
@@ -560,26 +574,42 @@ void Channel::_applyBuffer( osg::Camera* camera ) const
         colorMask.red, colorMask.green, colorMask.blue, true );
 }
 
-void Channel::_applyViewport( osg::Camera* camera ) const
+void Channel::_applyViewport( osg::Camera* camera )
 {
     const eq::PixelViewport& pvp = getPixelViewport( );
     camera->setViewport( pvp.x, pvp.y, pvp.w, pvp.h );
 }
 
-void Channel::_applyScene( ) const
+void Channel::_applyViewport2d( osg::Camera* camera )
 {
-    EQ_TS_THREAD( _pipeThread );
+    const eq::PixelViewport& pvp = getPixelViewport( );
+    const eq::Viewport& vp = getViewport( );
 
-    _applyBuffer( _camera );
-    _applyViewport( _camera );
-    _applyPerspective( _camera );
+    camera->setViewport( -( pvp.w / vp.w ) * vp.x, -( pvp.h / vp.h ) * vp.y,
+        pvp.w / vp.w, pvp.h / vp.h );
 
-    _applyPerspectiveTransform( _camera,
-        static_cast< const View* >( getView( ))->getViewMatrix( ));
+#if 0
+    const osg::Viewport* v2 = camera->getViewport( );
+    LBWARN << "vp = " << vp << ", pvp = " << pvp << std::endl;
+    LBWARN << "v2 = " << v2->x() << ", " << v2->y() << ", " << v2->width() <<
+           ", " << v2->height() << std::endl;
+#endif
 }
 
-void Channel::_applyPerspective( osg::Camera* camera ) const
+void Channel::_applyPerspective( osg::Camera* camera )
 {
+    const View* view = static_cast< const View* >( getView( ));
+    double near, far;
+    view->getNearFar( near, far );
+/*
+    double r = far - near;
+
+    const eq::Range &range = getRange( );
+    near += r * range.start;
+    far = near + ( r * range.end );
+*/
+    setNearFar( near, far );
+
     const eq::Frustumf& frustum = getPerspective( );
     camera->setProjectionMatrixAsFrustum(
         frustum.left( ), frustum.right( ),
@@ -587,35 +617,202 @@ void Channel::_applyPerspective( osg::Camera* camera ) const
         frustum.near_plane( ), frustum.far_plane( ));
 }
 
-void Channel::_applyPerspectiveTransform( osg::Camera* camera,
-        const eq::Matrix4d& viewMatrix ) const
+void Channel::_applyPerspectiveTransform( osg::Camera* camera )
 {
-    camera->setViewMatrix( vmmlToOsg(
-        eq::Matrix4d( getPerspectiveTransform( )) * viewMatrix ));
+    const eq::Matrix4d& viewMatrix =
+        static_cast< const View* >( getView( ))->getViewMatrix( );
+    const eq::Matrix4d& headTransform = getPerspectiveTransform( );
+    camera->setViewMatrix( vmmlToOsg( headTransform * viewMatrix ));
 }
 
-void Channel::_applyView( ) const
-{
-    EQ_TS_THREAD( _pipeThread );
-
-    _applyBuffer( _camera2d );
-    _applyViewport( _camera2d );
-    _applyScreen( _camera2d );
-
-    _applyScreenTransform( _camera2d );
-}
-
-void Channel::_applyScreen( osg::Camera* camera ) const
+void Channel::_applyScreen( osg::Camera* camera )
 {
     const eq::Frustumf& screen = getScreenFrustum( );
+    //LBWARN << "screen = " << screen << std::endl;
     camera->setProjectionMatrixAsOrtho(
         screen.left( ), screen.right( ),
         screen.bottom( ), screen.top( ),
         screen.near_plane( ), screen.far_plane( ));
 }
 
-void Channel::_applyScreenTransform( osg::Camera* camera ) const
+void Channel::_applyScreenTransform( osg::Camera* camera )
 {
-    camera->setViewMatrix( vmmlToOsg( eq::Matrix4d( getOrthoTransform( ))));
+    //camera->setViewMatrix( vmmlToOsg( getOrthoTransform( )));
+}
+
+
+
+
+struct MyClickHandler : public ControlEventHandler
+{
+    void onClick( Control* control, const osg::Vec2f& pos, int mouseButtonMask )
+    {
+        OE_NOTICE << "You clicked at (" << pos.x() << ", " << pos.y() << ") within the control."
+            << std::endl;
+    }
+};
+
+static LabelControl* s_sliderLabel;
+
+struct MySliderHandler : public ControlEventHandler
+{
+    void onValueChanged( Control* control, float value )
+    {
+        std::stringstream buf;
+        buf << (int)value;
+        std::string str;
+        str = buf.str();
+        s_sliderLabel->setText( str );
+    }
+};
+
+#if 0
+struct RotateImage : public ControlEventHandler
+{
+    void onValueChanged( Control* control, float value )
+    {
+        s_imageControl->setRotation( Angular(value) );
+    }
+};
+#endif
+
+void
+createControls( ControlCanvas* cs )
+{
+    static lunchbox::Lock lock;
+    lunchbox::ScopedWrite _mutex( lock );
+
+    // a container centered on the screen, containing an image and a text label.
+    {
+        VBox* center = new VBox();
+        center->setFrame( new RoundedFrame() );
+        center->getFrame()->setBackColor( 1,1,1,0.5 );
+        center->setPadding( 10 );
+        center->setHorizAlign( Control::ALIGN_CENTER );
+        center->setVertAlign( Control::ALIGN_CENTER );
+
+        // Add an image:
+        osg::ref_ptr<osg::Image> image = osgDB::readImageFile("http://demo.pelicanmapping.com/rmweb/readymap_logo.png");
+        if ( image.valid() )
+        {
+            ImageControl*imageControl = new ImageControl( image.get() );
+            imageControl->setHorizAlign( Control::ALIGN_CENTER );
+            imageControl->setFixSizeForRotation( true );
+            //imageCon->addEventHandler( new ImageRotationHandler );
+            center->addControl( imageControl );
+            center->setHorizAlign( Control::ALIGN_CENTER );
+        }
+
+        // Add a text label:
+        LabelControl* label = new LabelControl( "osgEarth Controls Toolkit" );
+        label->setFont( osgText::readFontFile(
+                    "/afs/cmf/project/dc/sys/share/OpenSceneGraph-Data/fonts/arialbd.ttf" ) );
+        label->setFontSize( 24.0f );
+        label->setHorizAlign( Control::ALIGN_CENTER );
+        label->setMargin( 5 );
+        center->addControl( label );
+
+        // Rotation slider
+        HBox* rotateBox = new HBox();
+        rotateBox->setChildVertAlign( Control::ALIGN_CENTER );
+        rotateBox->setHorizFill( true );
+        rotateBox->setBackColor( Color::Blue );
+        {
+            rotateBox->addControl( new LabelControl("Rotate: ") );
+
+            HSliderControl* rotateSlider = new HSliderControl( -180.0, 180.0, 0.0 );
+            //rotateSlider->addEventHandler( new RotateImage() );
+            rotateSlider->setHeight( 8.0f );
+            rotateSlider->setHorizFill( true );
+            rotateBox->addControl( rotateSlider );
+        }
+        center->addControl( rotateBox );
+
+        cs->addControl( center );
+    }
+
+    // a simple vbox with absolute positioning in the upper left with two text labels.
+    {
+        VBox* ul = new VBox();
+        ul->setPosition( 20, 20 );
+        ul->setPadding( 10 );
+        {
+            LabelControl* title = new LabelControl( "Upper left control", 22, osg::Vec4f(1,1,0,1) );
+            ul->addControl( title );
+
+            LabelControl* content = new LabelControl( "Here is some text in the upper left control" );
+            ul->addControl( content );
+
+            HBox* c2 = new HBox();
+            c2->setChildSpacing( 10 );
+            {
+                HSliderControl* slider = new HSliderControl( 0, 100 );
+                slider->setBackColor( .6,0,0,1 );
+                slider->setHeight( 25 );
+                slider->setWidth( 300 );
+                slider->addEventHandler( new MySliderHandler() );
+                c2->addControl( slider );
+
+                s_sliderLabel = new LabelControl();
+                s_sliderLabel->setVertAlign( Control::ALIGN_CENTER );
+                c2->addControl( s_sliderLabel );        
+            }
+            ul->addControl( c2 );
+
+            HBox* c3 = new HBox();
+            c3->setHorizAlign( Control::ALIGN_CENTER );
+            c3->setChildSpacing( 10 );
+            {
+                HBox* c4 = new HBox();
+                c4->setChildSpacing( 5 );
+                {
+                    c4->addControl( new CheckBoxControl( true ) );
+                    c4->addControl( new LabelControl( "Checkbox 1" ) );
+                }
+                c3->addControl( c4 );
+
+                HBox* c5 = new HBox();
+                c5->setChildSpacing( 5 );
+                {
+                    c5->addControl( new CheckBoxControl( false ) );
+                    c5->addControl( new LabelControl( "Checkbox 2" ) );
+                }
+                c3->addControl( c5 );
+            }
+            ul->addControl( c3 );
+        }
+        cs->addControl( ul );
+
+        ul->addEventHandler( new MyClickHandler );
+    }
+
+    // a centered hbox container along the bottom on the screen.
+    {
+        HBox* bottom = new HBox();
+        bottom->setFrame( new RoundedFrame() );
+        bottom->getFrame()->setBackColor(0,0,0,0.5);
+        bottom->setMargin( 10 );
+        bottom->setChildSpacing( 145 );
+        bottom->setVertAlign( Control::ALIGN_BOTTOM );
+        bottom->setHorizAlign( Control::ALIGN_CENTER );
+
+        for( int i=0; i<4; ++i )
+        {
+            LabelControl* label = new LabelControl();
+            std::stringstream buf;
+            buf << "Label_" << i;
+            std::string str;
+            str = buf.str();
+            label->setText( str );
+            label->setMargin( 10 );
+            label->setBackColor( 1,1,1,0.4 );
+            bottom->addControl( label );
+
+            label->setActiveColor(1,.3,.3,1);
+            label->addEventHandler( new MyClickHandler );
+        }
+
+        cs->addControl( bottom );
+    }
 }
 }

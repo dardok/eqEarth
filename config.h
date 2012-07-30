@@ -69,9 +69,12 @@ protected:
 
 private:
     View* selectCurrentView( const eq::uint128_t& viewID );
-    void handleMouseEvent( const eq::ConfigEvent* event );
+    void handleMouseEvent( const eq::ConfigEvent* event, View* view,
+            double time );
     void updateCurrentWorldPointer( const eq::ConfigEvent* event );
 
     bool appInitGL( bool pbuffer = true );
+
+    struct ViewCollector;
 };
 }

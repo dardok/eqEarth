@@ -40,8 +40,8 @@ protected:
 #endif
     virtual void frameClear( const eq::uint128_t& frameID );
     virtual void frameDraw( const eq::uint128_t& frameID );
-    virtual void frameViewFinish( const eq::uint128_t& frameID );
     virtual void frameViewStart( const eq::uint128_t& frameID );
+    virtual void frameViewFinish( const eq::uint128_t& frameID );
 
     virtual bool processEvent( const eq::Event& event );
 
@@ -50,6 +50,7 @@ protected:
     osg::ref_ptr< osg::Camera > _camera;
     osg::ref_ptr< osgViewer::Renderer > _renderer;
 
+    bool _first;
     osg::ref_ptr< osgViewer::Viewer > _viewer;
     osg::ref_ptr< osg::Camera > _camera2d;
 
@@ -63,17 +64,17 @@ private:
 
     void connectCameraToScene( const eq::uint128_t& id );
 
-    void _applyBuffer( osg::Camera* camera ) const;
-    void _applyViewport( osg::Camera* camera ) const;
+    void _applyScene( osg::Camera* camera );
+    void _applyView( osg::Camera* camera );
 
-    void _applyScene( ) const;
-    void _applyPerspective( osg::Camera* camera ) const;
-    void _applyPerspectiveTransform( osg::Camera* camera,
-        const eq::Matrix4d& viewMatrix ) const;
+    void _applyBuffer( osg::Camera* camera );
+    void _applyViewport( osg::Camera* camera );
+    void _applyViewport2d( osg::Camera* camera );
 
-    void _applyView( ) const;
-    void _applyScreen( osg::Camera* camera ) const;
-    void _applyScreenTransform( osg::Camera* camera ) const;
+    void _applyPerspective( osg::Camera* camera );
+    void _applyPerspectiveTransform( osg::Camera* camera );
+
+    void _applyScreen( osg::Camera* camera );
+    void _applyScreenTransform( osg::Camera* camera );
 };
 }
-

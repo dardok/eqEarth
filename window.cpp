@@ -9,7 +9,7 @@ namespace eqEarth
 
 struct WindowingSystem : public osg::GraphicsContext::WindowingSystemInterface
 {
-WindowingSystem( osg::GraphicsContext *context ) : _context( context ) { }
+WindowingSystem( osg::GraphicsContext* context ) : _context( context ) { }
 
 virtual unsigned int getNumScreens(
         const osg::GraphicsContext::ScreenIdentifier& screenIdentifier =
@@ -64,7 +64,7 @@ Window::~Window( )
 LBINFO << "<===== Window::~Window(" << (void *)this << ")" << std::endl;
 }
 
-void Window::initCapabilities( osg::GraphicsContext *context )
+void Window::initCapabilities( osg::GraphicsContext* context )
 {
     static lunchbox::Lock _wsiLock;
     static bool _initialized = false;
@@ -126,9 +126,9 @@ LBINFO << "-----> Window::configInitGL(" << initID <<
 
         static_cast< Node* >( getNode( ))->addGraphicsContext( _window );
 
-        unsigned int maxTexturePoolSize =
+        const unsigned int maxTexturePoolSize =
             osg::DisplaySettings::instance( )->getMaxTexturePoolSize( );
-        unsigned int maxBufferObjectPoolSize =
+        const unsigned int maxBufferObjectPoolSize =
             osg::DisplaySettings::instance( )->getMaxBufferObjectPoolSize( );
 
         if( maxTexturePoolSize > 0 )

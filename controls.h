@@ -21,7 +21,7 @@ private:
     const std::string deg2dms( double deg, const char c[2], int w );
     const std::string lat2dms( double lat );
     const std::string lon2dms( double lon );
-    const std::string lonlat2str( double lon, double lat ); 
+    const std::string lonlat2str( double lon, double lat );
 
     double _lon, _lat;
 };

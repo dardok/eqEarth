@@ -7,8 +7,9 @@
 #include "window.h" // for Window::initCapabilities
 #include "configEvent.h"
 
-#include <osgGA/TrackballManipulator>
 #include "earthManipulator.h"
+#include <osgEarth/TerrainEngineNode>
+#include <osgGA/TrackballManipulator>
 
 #include <osg/DeleteHandler>
 #include <osg/ImageStream>
@@ -57,60 +58,100 @@ static osg::ref_ptr< NullGraphicsContext > ngc =
 
 // ----------------------------------------------------------------------------
 
-struct ViewCollector : public eq::ConfigVisitor
+struct Config::ViewCollector : public eq::ConfigVisitor
 {
-ViewCollector( Config *config )
+ViewCollector( Config* config )
     : _config( config )
-    , _lastViewID( eq::UUID::ZERO )
 {
-}
-
-void configureAppView( osgViewer::View *view )
-{
-#if 0
-    osgGA::CameraManipulator *m = new osgGA::TrackballManipulator;
-/*
-    m->setHomePosition(
-        osg::Vec3d( 0, 0, 10 ),
-        osg::Vec3d( 0, 0, 0 ),
-        osg::Vec3d( 0, 1, 0 ), false );
-*/
-#else
-    osgGA::CameraManipulator *m = new EarthManipulator;
-
-    osgEarth::MapNode* map =
-        osgEarth::MapNode::findMapNode( view->getSceneData( ));
-    if( map )
-        m->setNode( map );
-#endif
-
-    view->setCameraManipulator( m );
-
-    view->getCamera( )->setComputeNearFarMode(
-        osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR );
-
-    _config->releaseOSGView( view );
 }
 
 virtual eq::VisitorResult visit( eq::View* view )
 {
     View* v = static_cast< View* >( view );
+    osgViewer::View* osgView;
 
     v->setSceneID( 1 );
-    v->setOverlayID( 1 );
 
-    v->setOSGView( _config->takeOrCreateOSGView( v->getSceneID( )));
+    osgView = _config->takeOrCreateOSGView( v->getSceneID( ));
 
-    configureAppView( v->getOSGView( ));
+    v->setOSGView( osgView );
 
-    _lastViewID = v->getID( );
+    if( !osgView->getCameraManipulator( ))
+    {
+        osgGA::CameraManipulator* m;
+
+        osgEarth::MapNode* map =
+            osgEarth::MapNode::findMapNode( osgView->getSceneData( ));
+        if( map )
+        {
+            m = new EarthManipulator;
+            m->setNode( map->getTerrainEngine( ));
+        }
+        else
+        {
+            m = new osgGA::TrackballManipulator;
+            m->setHomePosition(
+                osg::Vec3d( 0, 0, 10 ),
+                osg::Vec3d( 0, 0, 0 ),
+                osg::Vec3d( 0, 1, 0 ), false );
+            m->setNode( osgView->getSceneData( ));
+        }
+
+        osgView->setCameraManipulator( m );
+    }
+
+    _config->releaseOSGView( osgView );
+
+    LBCHECK( _config->selectCurrentView( v->getID( )));
 
     return eq::TRAVERSE_CONTINUE;
 }
 
 public:
     Config* _config;
-    eq::uint128_t _lastViewID;
+};
+
+// ----------------------------------------------------------------------------
+
+struct ViewUpdater : public eq::ConfigVisitor
+{
+virtual eq::VisitorResult visit( eq::View* view )
+{
+    View* v = static_cast< View* >( view );
+    osgViewer::View* osgView = v->getOSGView( );
+    LBASSERT( osgView );
+    const osgGA::CameraManipulator* m = osgView->getCameraManipulator( );
+    LBASSERT( m );
+    const osg::Matrixd& viewMatrix = m->getInverseMatrix( );
+
+    /* NEAR/FAR */
+    osgEarth::MapNode* map = osgEarth::MapNode::findMapNode(
+        osgView->getSceneData( ));
+    if( map && map->isGeocentric( ))
+    {
+        osg::Vec3d eye, center, up;
+        viewMatrix.getLookAt( eye, center, up );
+        double d = eye.length( );
+
+        double rp = map->getMap( )->
+            getProfile( )->getSRS( )->getEllipsoid()->getRadiusPolar( );
+
+        if( d > rp )
+        {
+            double zf = ::sqrt( d * d - rp * rp );
+            double nfr = NFR_AT_RADIUS + NFR_AT_DOUBLE_RADIUS *
+                (( d - rp ) / d );
+            double zn = osg::clampAbove( zf * nfr, 1.0 );
+
+            v->setNearFar( zn, zf );
+        }
+    }
+
+    /* VIEW MATRIX */
+    v->setViewMatrix( osgToVmml( viewMatrix ));
+
+    return eq::TRAVERSE_CONTINUE;
+}
 };
 
 // ----------------------------------------------------------------------------
@@ -177,12 +218,10 @@ LBINFO << "-----> Config::init( )" << std::endl;
 
     {
         ViewCollector m( this );
-
         accept( m );
-
-        if( NULL != selectCurrentView( m._lastViewID ))
-            init = true;
     }
+
+    init = true;
 
 out:
     if( !init )
@@ -204,44 +243,12 @@ bool Config::exit( )
 
 uint32_t Config::startFrame( )
 {
+    ViewUpdater m;
+    accept( m );
+
     const double t = static_cast< double >( getTime( )) / 1000.;
     _frameData.setSimulationTime( t );
     _frameData.setCalendarTime( time( NULL ));
-
-    const eq::uint128_t& currentViewID = _frameData.getCurrentViewID( );
-    View* view = static_cast< View* >( find< eq::View >( currentViewID ));
-    if( view )
-    {
-        osgViewer::View* osgView = view->getOSGView( );
-        LBASSERT( osgView );
-
-        /* NEAR/FAR */
-        osgEarth::MapNode* map = osgEarth::MapNode::findMapNode(
-            osgView->getSceneData( ));
-        if( map && map->isGeocentric( ))
-        {
-            osg::Vec3d eye, c, u;
-            osgView->getCamera( )->getViewMatrix( ).getLookAt( eye, c, u );
-            double d = eye.length( );
-
-            double rp = map->getMap( )->
-                getProfile( )->getSRS( )->getEllipsoid()->getRadiusPolar( );
-
-            if( d > rp )
-            {
-                double zf = ::sqrt( d * d - rp * rp );
-                double nfr = NFR_AT_RADIUS + NFR_AT_DOUBLE_RADIUS *
-                    (( d - rp ) / d );
-                double zn = osg::clampAbove( zf * nfr, 1.0 );
-
-                view->setNearFar( zn, zf );
-            }
-        }
-
-        /* VIEW MATRIX */
-        const osgGA::CameraManipulator* m = osgView->getCameraManipulator( );
-        view->setViewMatrix( osgToVmml( m->getInverseMatrix( )));
-    }
 
     uint32_t ret = eq::Config::startFrame( _frameData.commit( ));
 
@@ -267,8 +274,11 @@ uint32_t Config::startFrame( )
 
 uint32_t Config::finishFrame( )
 {
-    if(( _viewer->getNumViews( ) > 0 ) && _gc.valid( ))
-        _viewer->frameDrawFinish( false );
+    if( _viewer->getNumViews( ) > 0 )
+    {
+        if( _gc.valid( ))
+            _viewer->frameDrawFinish( false );
+    }
     else
         _appRenderTick = 0U;
 
@@ -299,7 +309,6 @@ bool Config::mapInitData( const eq::uint128_t& initDataID )
 bool Config::handleEvent( const eq::ConfigEvent* event )
 {
     bool ret = false;
-
     const double time = static_cast< double >( getTime( )) / 1000.;
 
     switch( event->data.type )
@@ -308,14 +317,21 @@ bool Config::handleEvent( const eq::ConfigEvent* event )
         case eq::Event::CHANNEL_POINTER_MOTION:
         case eq::Event::CHANNEL_POINTER_BUTTON_PRESS:
         case eq::Event::CHANNEL_POINTER_BUTTON_RELEASE:
-            handleMouseEvent( event );
-            ret = true;
+        {
+            View* view =
+                selectCurrentView( event->data.context.view.identifier );
+            if( view && _eventQueue.valid( ))
+            {
+                handleMouseEvent( event, view, time );
+                ret = true;
+            }
             break;
-
+        }
         case eq::Event::KEY_PRESS:
+        {
+            const int osgKey = eqKeyToOsg( event->data.key.key );
             if( _eventQueue.valid( ))
-                _eventQueue->keyPress( eqKeyToOsg( event->data.key.key ),
-                    time );
+                _eventQueue->keyPress( osgKey, time );
 
             if( 's' == event->data.key.key )
             {
@@ -351,13 +367,14 @@ bool Config::handleEvent( const eq::ConfigEvent* event )
                 ret = true;
             }
             break;
-
+        }
         case eq::Event::KEY_RELEASE:
+        {
+            const int osgKey = eqKeyToOsg( event->data.key.key );
             if( _eventQueue.valid( ))
-                _eventQueue->keyRelease( eqKeyToOsg( event->data.key.key ),
-                    time );
+                _eventQueue->keyRelease( osgKey, time );
             break;
-
+        }
         case ConfigEvent::INTERSECTION:
         {
             const ConfigEvent* hitEvent =
@@ -415,6 +432,9 @@ osgViewer::View* Config::takeOrCreateOSGView( const eq::uint128_t& sceneID )
     {
         osgView = CompositeViewer::createOSGView( sceneID );
 
+        osgView->getCamera( )->setComputeNearFarMode(
+            osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR );
+
         osgView->setSceneData( getScene( sceneID ));
         osgView->setDatabasePager( _pager );
 
@@ -456,8 +476,6 @@ osg::Group* Config::getScene( const eq::uint128_t& sceneID )
         if( map && map->getMap( )->getProfile( ) &&
             map->getMap()->isGeocentric( ))
         {
-            const osgEarth::Config& externals = map->externalConfig( );
-
             osgEarth::Util::SkyNode* sky =
                 new osgEarth::Util::SkyNode( map->getMap( ));
 
@@ -468,7 +486,7 @@ osg::Group* Config::getScene( const eq::uint128_t& sceneID )
 #if 0
             osgEarth::Drivers::OceanSurfaceNode* ocean =
                 new osgEarth::Drivers::OceanSurfaceNode( map,
-                    externals.child( "ocean" ));
+                    map->externalConfig( ).child( "ocean" ));
 
             group->addChild( ocean );
 #endif
@@ -554,6 +572,7 @@ void Config::cleanup( )
 
     _initData.setFrameDataID( eq::UUID::ZERO );
 
+    _eventQueue = 0;
     _viewer = 0;
 
     // Don't deref _scene until _pager threads are finished
@@ -567,6 +586,8 @@ void Config::cleanup( )
     }
 
     _scene = 0;
+
+    _gc = 0;
 }
 
 View* Config::selectCurrentView( const eq::uint128_t& viewID )
@@ -580,104 +601,106 @@ View* Config::selectCurrentView( const eq::uint128_t& viewID )
     return view;
 }
 
-void Config::handleMouseEvent( const eq::ConfigEvent* event )
+void Config::handleMouseEvent( const eq::ConfigEvent* event, View* view,
+        double time )
 {
-    const eq::uint128_t& viewID = event->data.context.view.identifier;
+    const eq::PixelViewport& pvp = event->data.context.pvp;
+    const uint32_t x = event->data.pointer.x;
+    const uint32_t y = event->data.pointer.y;
 
-    View *view = NULL;
+    LBASSERT( _eventQueue.valid( ));
 
-    if( NULL != ( view = selectCurrentView( viewID )))
+    switch( event->data.type )
     {
-        const double time = static_cast< double >( getTime( )) / 1000.;
-        const eq::PixelViewport& pvp = event->data.context.pvp;
-
-        float x = static_cast< float >( event->data.pointer.x );
-        float y = static_cast< float >( event->data.pointer.y );
-
-        switch( event->data.type )
+        case eq::Event::WINDOW_POINTER_WHEEL:
         {
-            case eq::Event::WINDOW_POINTER_WHEEL:
-            {
-                osgGA::GUIEventAdapter::ScrollingMotion sm =
-                    osgGA::GUIEventAdapter::SCROLL_NONE;
-                if( event->data.pointer.xAxis > 0 )
-                    sm = osgGA::GUIEventAdapter::SCROLL_UP;
-                else if( event->data.pointer.xAxis < 0 )
-                    sm = osgGA::GUIEventAdapter::SCROLL_DOWN;
-                else if( event->data.pointer.yAxis > 0 )
-                    sm = osgGA::GUIEventAdapter::SCROLL_RIGHT;
-                else if( event->data.pointer.yAxis < 0 )
-                    sm = osgGA::GUIEventAdapter::SCROLL_LEFT;
-                _eventQueue->mouseScroll( sm, time );
-                break;
-            }
-            case eq::Event::CHANNEL_POINTER_MOTION:
+            osgGA::GUIEventAdapter::ScrollingMotion sm =
+                osgGA::GUIEventAdapter::SCROLL_NONE;
+            if( event->data.pointer.xAxis > 0 )
+                sm = osgGA::GUIEventAdapter::SCROLL_UP;
+            else if( event->data.pointer.xAxis < 0 )
+                sm = osgGA::GUIEventAdapter::SCROLL_DOWN;
+            else if( event->data.pointer.yAxis > 0 )
+                sm = osgGA::GUIEventAdapter::SCROLL_RIGHT;
+            else if( event->data.pointer.yAxis < 0 )
+                sm = osgGA::GUIEventAdapter::SCROLL_LEFT;
+            _eventQueue->mouseScroll( sm, time );
+            break;
+        }
+        case eq::Event::CHANNEL_POINTER_MOTION:
+            _eventQueue->setMouseInputRange( 0, 0, pvp.w, pvp.h );
+            _eventQueue->mouseMotion( x, y, time );
+            break;
+        case eq::Event::CHANNEL_POINTER_BUTTON_PRESS:
+        {
+            const unsigned int b = eqButtonToOsg( event->data.pointer.button );
+            if( b <= 3 )
             {
                 _eventQueue->setMouseInputRange( 0, 0, pvp.w, pvp.h );
-                _eventQueue->mouseMotion( x, y, time );
-                break;
+                _eventQueue->mouseButtonPress( x, y, b, time );
             }
-            case eq::Event::CHANNEL_POINTER_BUTTON_PRESS:
-            {
-                unsigned int b = eqButtonToOsg( event->data.pointer.button );
-                if( b <= 3 )
-                {
-                    _eventQueue->setMouseInputRange( 0, 0, pvp.w, pvp.h );
-                    _eventQueue->mouseButtonPress( x, y, b, time );
-                }
-                break;
-            }
-            case eq::Event::CHANNEL_POINTER_BUTTON_RELEASE:
-            {
-                unsigned int b = eqButtonToOsg( event->data.pointer.button );
-                if( b <= 3 )
-                {
-                    _eventQueue->setMouseInputRange( 0, 0, pvp.w, pvp.h );
-                    _eventQueue->mouseButtonRelease( x, y, b, time );
-                }
-                break;
-            }
+            break;
         }
-
-        osgGA::EventQueue::Events events;
-        _eventQueue->takeEvents( events );
-
-        for( osgGA::EventQueue::Events::iterator itr = events.begin( );
-            itr != events.end( ); ++itr)
+        case eq::Event::CHANNEL_POINTER_BUTTON_RELEASE:
         {
-            osg::ref_ptr< osgGA::CameraManipulator > m =
-                view->getOSGView( )->getCameraManipulator( );
-            if( m.valid( ))
+            const unsigned int b = eqButtonToOsg( event->data.pointer.button );
+            if( b <= 3 )
             {
-                osg::ref_ptr< osg::Camera > camera =
-                    view->getOSGView( )->getCamera( );
-
-                const eq::Matrix4d viewMatrix =
-                    eq::Matrix4d( event->data.context.headTransform ) *
-                        view->getViewMatrix( );
-
-                const eq::Frustumf& frustum = event->data.context.frustum;
-
-                ngc->setPVP( pvp.w, pvp.h );
-
-                camera->setGraphicsContext( ngc );
-
-                camera->setViewport( 0, 0, pvp.w, pvp.h );
-
-                camera->setProjectionMatrixAsFrustum(
-                    frustum.left( ), frustum.right( ),
-                    frustum.bottom( ), frustum.top( ),
-                    frustum.near_plane( ), frustum.far_plane( ));
-
-                camera->setViewMatrix( vmmlToOsg( viewMatrix ));
-
-                m->handleWithCheckAgainstIgnoreHandledEventsMask(
-                    *itr->get( ), *view->getOSGView( ));
-
-                ngc->clearCameras( );
-
-                camera->setGraphicsContext( 0 );
+                _eventQueue->setMouseInputRange( 0, 0, pvp.w, pvp.h );
+                _eventQueue->mouseButtonRelease( x, y, b, time );
             }
+            break;
+        }
+        default:
+            break;
+    }
+
+    osgGA::EventQueue::Events events;
+    _eventQueue->takeEvents( events );
+
+    for( osgGA::EventQueue::Events::iterator itr = events.begin( );
+        itr != events.end( ); ++itr)
+    {
+        osgViewer::View* osgView = view->getOSGView( );
+        LBASSERT( osgView );
+
+        osg::ref_ptr< osgGA::CameraManipulator > m =
+            osgView->getCameraManipulator( );
+        if( m.valid( ))
+        {
+            osg::ref_ptr< osg::Camera > camera = osgView->getCamera( );
+
+            ngc->setPVP( pvp.w, pvp.h );
+
+            camera->setGraphicsContext( ngc );
+
+            // viewport
+            camera->setViewport( 0, 0, pvp.w, pvp.h );
+
+            // perspective
+            double near, far;
+            eq::Frustumf frustum = event->data.context.frustum;
+            view->getNearFar( near, far );
+            frustum.adjust_near( near );
+            frustum.far_plane( ) = far;
+            camera->setProjectionMatrixAsFrustum(
+                frustum.left( ), frustum.right( ),
+                frustum.bottom( ), frustum.top( ),
+                frustum.near_plane( ), frustum.far_plane( ));
+
+            // perspective transform
+            const eq::Matrix4d& viewMatrix = view->getViewMatrix( );
+            const eq::Matrix4d& headTransform =
+                event->data.context.headTransform;
+            camera->setViewMatrix( vmmlToOsg( headTransform * viewMatrix));
+
+            m->handleWithCheckAgainstIgnoreHandledEventsMask(
+                *itr->get( ), *osgView);
+
+            ngc->clearCameras( );
+
+            camera->setGraphicsContext( 0 );
+            camera->setViewport( 0 );
         }
     }
 }
@@ -741,30 +764,29 @@ bool Config::appInitGL( bool pbuffer )
 
     _gc = osg::GraphicsContext::createGraphicsContext( traits );
 
-    if( _gc.valid( ))
-    {
-        _gc->realize( );
-        _gc->makeCurrent( );
+    if( !_gc.valid( ))
+        return false;
 
-        if( _ico.valid( ))
-            _ico->addGraphicsContext( _gc );
+    LBCHECK( _gc->realize( ));
 
-        unsigned int maxTexturePoolSize =
-            osg::DisplaySettings::instance( )->getMaxTexturePoolSize( );
-        unsigned int maxBufferObjectPoolSize =
-            osg::DisplaySettings::instance( )->getMaxBufferObjectPoolSize( );
+    _gc->makeCurrent( );
 
-        if( maxTexturePoolSize > 0 )
-            _gc->getState( )->setMaxTexturePoolSize( maxTexturePoolSize );
-        if( maxBufferObjectPoolSize > 0 )
-            _gc->getState( )->setMaxBufferObjectPoolSize(
-                maxBufferObjectPoolSize );
+    if( _ico.valid( ))
+        _ico->addGraphicsContext( _gc );
 
-        Window::initCapabilities( _gc );
+    const unsigned int maxTexturePoolSize =
+        osg::DisplaySettings::instance( )->getMaxTexturePoolSize( );
+    const unsigned int maxBufferObjectPoolSize =
+        osg::DisplaySettings::instance( )->getMaxBufferObjectPoolSize( );
 
-        return true;
-    }
+    if( maxTexturePoolSize > 0 )
+        _gc->getState( )->setMaxTexturePoolSize( maxTexturePoolSize );
+    if( maxBufferObjectPoolSize > 0 )
+        _gc->getState( )->setMaxBufferObjectPoolSize(
+            maxBufferObjectPoolSize );
 
-    return false;
+    Window::initCapabilities( _gc );
+
+    return true;
 }
 }

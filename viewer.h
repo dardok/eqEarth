@@ -10,6 +10,7 @@ namespace eqEarth
 class CompositeViewer : public osgViewer::CompositeViewer
 {
 public:
+    // AppNode only
     void setGlobalContext( osg::GraphicsContext *context );
 
     static osgViewer::View* createOSGView( const eq::uint128_t& id,

@@ -14,7 +14,7 @@ SkyUpdateCallback( ) : _last( -1 ) { }
 
 void operator( )( osg::Node* node, osg::NodeVisitor* nv )
 {
-    if( osg::NodeVisitor::UPDATE_VISITOR == nv->getVisitorType( )) 
+    if( osg::NodeVisitor::UPDATE_VISITOR == nv->getVisitorType( ))
     {
         osg::ref_ptr< const osg::FrameStamp > fs = nv->getFrameStamp( );
 

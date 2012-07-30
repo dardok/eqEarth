@@ -53,7 +53,7 @@ void Node::removeGraphicsContext( osg::GraphicsContext* context )
     }
 }
 
-void Node::addChannelToOSGView( const eq::uint128_t& id, Channel* channel )
+void Node::addCameraToOSGView( const eq::uint128_t& id, osg::Camera* camera )
 {
     Config* config = static_cast< Config* >( getConfig( ));
 
@@ -88,13 +88,14 @@ void Node::addChannelToOSGView( const eq::uint128_t& id, Channel* channel )
 
 //LBINFO << "<----- Node::addCameraToView(" << id << ")" << std::endl;
 
-    LBCHECK( osgView->addSlave( channel->getCamera( )));
+    LBCHECK( osgView->addSlave( camera ));
 
     if( needFrameStart )
         _viewer->frameStart( _frameNumber, getFrameData( ));
 }
 
-void Node::removeChannelFromOSGView( const eq::uint128_t& id, Channel* channel )
+void Node::removeCameraFromOSGView( const eq::uint128_t& id,
+        osg::Camera* camera )
 {
     LBASSERT( _viewer.valid( ));
 
@@ -103,8 +104,6 @@ void Node::removeChannelFromOSGView( const eq::uint128_t& id, Channel* channel )
 
     osg::ref_ptr< osgViewer::View > osgView = _viewer->findOSGViewByID( id );
     LBASSERT( osgView.valid( ));
-
-    osg::Camera* camera = channel->getCamera( );
 
     LBCHECK( osgView->removeSlave( osgView->findSlaveIndexForCamera( camera )));
 

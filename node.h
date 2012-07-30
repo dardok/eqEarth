@@ -25,8 +25,9 @@ public:
     void addGraphicsContext( osg::GraphicsContext* context );
     void removeGraphicsContext( osg::GraphicsContext* context );
 
-    void addChannelToOSGView( const eq::uint128_t& id, Channel* channel );
-    void removeChannelFromOSGView( const eq::uint128_t& id, Channel* channel );
+    void addCameraToOSGView( const eq::uint128_t& id, osg::Camera* camera );
+    void removeCameraFromOSGView( const eq::uint128_t& id,
+        osg::Camera* camera );
 
 #if 0
     CompositeViewer *getViewer( ) { return _viewer; }

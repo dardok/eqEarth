@@ -15,8 +15,8 @@ protected:
     virtual ~Window( );
 
 public:
-    osg::GraphicsContext *getGraphicsContext( ) { return _window.get( ); }
-    const osg::GraphicsContext *getGraphicsContext( ) const
+    osg::GraphicsContext* getGraphicsContext( ) { return _window.get( ); }
+    const osg::GraphicsContext* getGraphicsContext( ) const
         { return _window.get( ); }
 
     osg::State* getState( ) { return _window->getState( ); }
@@ -25,7 +25,7 @@ public:
     unsigned int getContextID( ) const
         { return _window->getState( )->getContextID( ); }
 
-    static void initCapabilities( osg::GraphicsContext *context );
+    static void initCapabilities( osg::GraphicsContext* context );
 
 protected:
     virtual bool configInit( const eq::uint128_t& initID );

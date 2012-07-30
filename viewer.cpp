@@ -49,9 +49,9 @@ void CompositeViewer::setGlobalContext( osg::GraphicsContext *context )
         if( !camera->getGraphicsContext( ))
         {
             camera->setGraphicsContext( context );
+
             camera->setViewport( 0, 0,
                 context->getTraits( )->width, context->getTraits( )->height );
-            camera->setProjectionMatrixAsPerspective( 1, 1, 0.0001, 0.0002 );
         }
     }
 }
