@@ -6,9 +6,9 @@
 #include "frameData.h"
 #include "view.h"
 #include "viewer.h"
-#include "controls.h"
 
 #include <osg/Node>
+#include <osgEarthUtil/Controls>
 
 namespace eqEarth
 {
@@ -34,11 +34,16 @@ public:
     virtual bool handleEvent( const eq::ConfigEvent* event );
 
 public:
+    void setThreadHint( bool thread_hint ) { _thread_hint = thread_hint; }
+
     osgUtil::IncrementalCompileOperation*
         getIncrementalCompileOperation( ) const { return _ico.get( ); }
 
     osgViewer::View* takeOrCreateOSGView( const eq::uint128_t& sceneID );
     void releaseOSGView( osgViewer::View* view );
+
+    void createOverlay( osgEarth::Util::Controls::ControlCanvas* cc,
+            eq::View* view );
 
 #if 0
     CompositeViewer *getViewer( ) { return _viewer; }
@@ -64,6 +69,7 @@ protected:
     osg::ref_ptr< osgGA::EventQueue > _eventQueue;
 
     osg::ref_ptr< osg::GraphicsContext > _gc;
+    bool _thread_hint;
 
     uint32_t _appRenderTick;
 

@@ -108,7 +108,7 @@ void CompositeViewer::advance( const uint32_t frameNumber,
 }
 
 void CompositeViewer::frameStart( const uint32_t frameNumber,
-        const FrameData& frameData, bool preRender )
+        const FrameData& frameData )
 {
 //LBINFO << "-----> Viewer::frameStart(" << frameNumber << ")" << std::endl;
 
@@ -116,9 +116,6 @@ void CompositeViewer::frameStart( const uint32_t frameNumber,
 
     eventTraversal( );
     updateTraversal( );
-
-    if( !preRender )
-        return;
 
     Scenes scenes;
     getScenes( scenes );
@@ -142,12 +139,9 @@ void CompositeViewer::frameStart( const uint32_t frameNumber,
 //LBINFO << "<----- Viewer::frameStart(" << frameNumber << ")" << std::endl;
 }
 
-void CompositeViewer::frameDrawFinish( bool postRender )
+void CompositeViewer::frameDrawFinish(  )
 {
 //LBINFO << "-----> Viewer::frameDrawFinish( )" << std::endl;
-
-    if( !postRender )
-        return;
 
     Scenes scenes;
     getScenes( scenes );
@@ -166,6 +160,34 @@ void CompositeViewer::frameDrawFinish( bool postRender )
     _requestRedraw = false;
 
 //LBINFO << "<----- Viewer::frameDrawFinish( )" << std::endl;
+}
+
+void CompositeViewer::renderingTraversals( bool needMakeCurrentInThisThread )
+{
+    using namespace osgViewer;
+
+    Contexts contexts;
+    getContexts( contexts );
+
+    Contexts::iterator itr;
+
+    bool doneMakeCurrentInThisThread = false;
+
+    for( itr = contexts.begin( ); itr != contexts.end( ); ++itr )
+    {
+        if(( *itr )->valid( ))
+        {
+            if( needMakeCurrentInThisThread )
+            {
+                doneMakeCurrentInThisThread = true;
+                makeCurrent( *itr );
+            }
+            ( *itr )->runOperations( );
+        }
+    }
+
+    if (doneMakeCurrentInThisThread)
+        releaseContext( );
 }
 
 void CompositeViewer::realize( )

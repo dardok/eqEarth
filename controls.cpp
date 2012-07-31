@@ -14,6 +14,8 @@ LonLatLabelControl::LonLatLabelControl( const std::string& value,
 {
     updateLonLat( _lon, _lat );
     setEncoding( osgText::String::ENCODING_UTF8 );
+    setFont( osgText::readFontFile(
+        "/afs/cmf/project/dc/sys/share/OpenSceneGraph-Data/fonts/VeraMono.ttf" ));
 };
 
 LonLatLabelControl::LonLatLabelControl( const std::string& value,
@@ -23,6 +25,8 @@ LonLatLabelControl::LonLatLabelControl( const std::string& value,
 {
     updateLonLat( _lon, _lat );
     setEncoding( osgText::String::ENCODING_UTF8 );
+    setFont( osgText::readFontFile(
+        "/afs/cmf/project/dc/sys/share/OpenSceneGraph-Data/fonts/VeraMono.ttf" ));
 };
 
 void LonLatLabelControl::updateLonLat( const double lon, const double lat )

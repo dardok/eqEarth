@@ -52,13 +52,10 @@ protected:
     FrameData _frameData;
     uint32_t _frameNumber;
 
-    lunchbox::Lock _viewer_lock;
+    mutable lunchbox::Lock _viewer_lock;
     osg::ref_ptr< CompositeViewer > _viewer;
 
 public:
     void renderLocked( osgViewer::Renderer* renderer ) const;
-
-private:
-    mutable lunchbox::Lock _render_lock;
 };
 }

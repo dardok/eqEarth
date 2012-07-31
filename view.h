@@ -3,7 +3,6 @@
 #include <eq/eq.h>
 
 #include <osgViewer/View>
-#include <osgViewer/Viewer>
 
 namespace eqEarth
 {
@@ -19,11 +18,17 @@ public:
     void setSceneID( const eq::uint128_t& id );
     eq::uint128_t getSceneID( ) const { return _sceneID; }
 
+    void setOverlayID( const eq::uint128_t& id );
+    eq::uint128_t getOverlayID( ) const { return _overlayID; }
+
     void setViewMatrix( const eq::Matrix4d& viewMatrix );
     const eq::Matrix4d& getViewMatrix( ) const { return _viewMatrix; }
 
     void setNearFar( double near, double far );
     void getNearFar( double& near, double& far ) const;
+
+    void setLatLon( double lat, double lon );
+    void getLatLon( double& lat, double& lon ) const;
 
     void setWorldPointer( const eq::Vector3d& origin,
         const eq::Vector3d& direction );
@@ -45,9 +50,11 @@ private:
         enum DirtyBits
         {
             DIRTY_SCENE   = eq::fabric::Serializable::DIRTY_CUSTOM << 0,
-            DIRTY_CAMERA  = eq::fabric::Serializable::DIRTY_CUSTOM << 1,
-            DIRTY_NEARFAR = eq::fabric::Serializable::DIRTY_CUSTOM << 2,
-            DIRTY_POINTER = eq::fabric::Serializable::DIRTY_CUSTOM << 3
+            DIRTY_OVERLAY = eq::fabric::Serializable::DIRTY_CUSTOM << 1,
+            DIRTY_CAMERA  = eq::fabric::Serializable::DIRTY_CUSTOM << 2,
+            DIRTY_NEARFAR = eq::fabric::Serializable::DIRTY_CUSTOM << 3,
+            DIRTY_LATLON  = eq::fabric::Serializable::DIRTY_CUSTOM << 4,
+            DIRTY_POINTER = eq::fabric::Serializable::DIRTY_CUSTOM << 5
         };
 
         virtual void serialize( co::DataOStream& os,
@@ -64,8 +71,10 @@ private:
     Proxy _proxy;
     friend class Proxy;
     eq::uint128_t _sceneID;
+    eq::uint128_t _overlayID;
     eq::Matrix4d _viewMatrix;
     double _near, _far;
+    double _lat, _lon;
     eq::Vector3d _origin;
     eq::Vector3d _direction;
 

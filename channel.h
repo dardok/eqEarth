@@ -8,6 +8,8 @@
 #include <osgViewer/Viewer>
 #include <osgViewer/Renderer>
 
+#include <osgEarthUtil/Controls>
+
 #define CONTROLS
 
 namespace eqEarth
@@ -42,6 +44,7 @@ protected:
     virtual void frameDraw( const eq::uint128_t& frameID );
     virtual void frameViewStart( const eq::uint128_t& frameID );
     virtual void frameViewFinish( const eq::uint128_t& frameID );
+    virtual void frameAssemble( const eq::uint128_t& frameID );
 
     virtual bool processEvent( const eq::Event& event );
 
@@ -50,9 +53,9 @@ protected:
     osg::ref_ptr< osg::Camera > _camera;
     osg::ref_ptr< osgViewer::Renderer > _renderer;
 
-    bool _first;
-    osg::ref_ptr< osgViewer::Viewer > _viewer;
-    osg::ref_ptr< osg::Camera > _camera2d;
+    eq::uint128_t _overlayID;
+    osg::ref_ptr< osgViewer::Viewer > _viewer2d;
+    osg::ref_ptr< osgEarth::Util::Controls::ControlCanvas > _camera2d;
 
     void updateView( );
     void windowPick( uint32_t x, uint32_t y ) const;
@@ -63,13 +66,13 @@ private:
     void cleanup( );
 
     void connectCameraToScene( const eq::uint128_t& id );
+    void connectCameraToOverlay( const eq::uint128_t& id );
 
     void _applyScene( osg::Camera* camera );
     void _applyView( osg::Camera* camera );
 
     void _applyBuffer( osg::Camera* camera );
     void _applyViewport( osg::Camera* camera );
-    void _applyViewport2d( osg::Camera* camera );
 
     void _applyPerspective( osg::Camera* camera );
     void _applyPerspectiveTransform( osg::Camera* camera );

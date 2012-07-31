@@ -48,7 +48,8 @@ void initCapabilities( )
     osg::GraphicsContext::setWindowingSystemInterface( original );
 }
 
-osg::observer_ptr< osg::GraphicsContext > _context;
+private:
+    osg::observer_ptr< osg::GraphicsContext > _context;
 };
 
 // ----------------------------------------------------------------------------
@@ -160,8 +161,8 @@ bool Window::configExitGL( )
 void Window::frameStart( const eq::uint128_t& frameID,
         const uint32_t frameNumber )
 {
-//LBINFO << "-----> Window<" << getName( ) << ">::frameStart("
-//    << frameID << ", " << frameNumber << ")" << std::endl;
+LBINFO << "-----> Window<" << getName( ) << ">::frameStart("
+    << frameID << ", " << frameNumber << ")" << std::endl;
 
     LBASSERT( _window.valid( ) && _window->valid( ));
 
@@ -173,27 +174,27 @@ void Window::frameStart( const eq::uint128_t& frameID,
 
     eq::Window::frameStart( frameID, frameNumber );
 
-//LBINFO << "<----- Window<" << getName( ) << ">::frameStart("
-//    << frameID << ", " << frameNumber << ")" << std::endl;
+LBINFO << "<----- Window<" << getName( ) << ">::frameStart("
+    << frameID << ", " << frameNumber << ")" << std::endl;
 }
 
 void Window::frameFinish( const eq::uint128_t& frameID,
         const uint32_t frameNumber )
 {
-//LBINFO << "-----> Window<" << getName( ) << ">::frameFinish("
-//    << frameID << ", " << frameNumber << ")" << std::endl;
+LBINFO << "-----> Window<" << getName( ) << ">::frameFinish("
+    << frameID << ", " << frameNumber << ")" << std::endl;
 
     eq::Window::frameFinish( frameID, frameNumber );
 
-//LBINFO << "<----- Window<" << getName( ) << ">::frameFinish("
-//    << frameID << ", " << frameNumber << ")" << std::endl;
+LBINFO << "<----- Window<" << getName( ) << ">::frameFinish("
+    << frameID << ", " << frameNumber << ")" << std::endl;
 }
 
 void Window::frameDrawFinish( const eq::uint128_t& frameID,
         const uint32_t frameNumber )
 {
-//LBINFO << "-----> Window<" << getName( ) << ">::frameDrawFinish("
-//    << frameID << ", " << frameNumber << ")" << std::endl;
+LBINFO << "-----> Window<" << getName( ) << ">::frameDrawFinish("
+    << frameID << ", " << frameNumber << ")" << std::endl;
 
     LBASSERT( _window.valid( ) && _window->valid( ));
 
@@ -202,8 +203,8 @@ void Window::frameDrawFinish( const eq::uint128_t& frameID,
 
     eq::Window::frameDrawFinish( frameID, frameNumber );
 
-//LBINFO << "<----- Window<" << getName( ) << ">::frameDrawFinish("
-//    << frameID << ", " << frameNumber << ")" << std::endl;
+LBINFO << "<----- Window<" << getName( ) << ">::frameDrawFinish("
+    << frameID << ", " << frameNumber << ")" << std::endl;
 }
 
 void Window::swapBuffers( )

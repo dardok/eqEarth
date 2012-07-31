@@ -6,6 +6,7 @@
 #include "callbacks.h"
 #include "window.h" // for Window::initCapabilities
 #include "configEvent.h"
+#include "controls.h"
 
 #include "earthManipulator.h"
 #include <osgEarth/TerrainEngineNode>
@@ -25,6 +26,7 @@
 #include <osgEarthDrivers/kml/KML>
 #include <osgEarthDrivers/ocean_surface/OceanSurface>
 #include <osgEarth/ShaderComposition>
+#include <osgEarthSymbology/Color>
 
 #define NFR_AT_RADIUS 0.00001
 #define NFR_AT_DOUBLE_RADIUS 0.0049
@@ -71,6 +73,7 @@ virtual eq::VisitorResult visit( eq::View* view )
     osgViewer::View* osgView;
 
     v->setSceneID( 1 );
+    v->setOverlayID( 1 );
 
     osgView = _config->takeOrCreateOSGView( v->getSceneID( ));
 
@@ -124,6 +127,9 @@ virtual eq::VisitorResult visit( eq::View* view )
     LBASSERT( m );
     const osg::Matrixd& viewMatrix = m->getInverseMatrix( );
 
+    /* VIEW MATRIX */
+    v->setViewMatrix( osgToVmml( viewMatrix ));
+
     /* NEAR/FAR */
     osgEarth::MapNode* map = osgEarth::MapNode::findMapNode(
         osgView->getSceneData( ));
@@ -147,8 +153,14 @@ virtual eq::VisitorResult visit( eq::View* view )
         }
     }
 
-    /* VIEW MATRIX */
-    v->setViewMatrix( osgToVmml( viewMatrix ));
+    /* LAT/LON */
+    osg::ref_ptr< const osgEarth::Util::EarthManipulator > em =
+        dynamic_cast< const osgEarth::Util::EarthManipulator* >( m );
+    if( em.valid( ))
+    {
+        const osgEarth::Util::Viewpoint& vp = em->getViewpoint( );
+        v->setLatLon( vp.y( ), vp.x( ));
+    }
 
     return eq::TRAVERSE_CONTINUE;
 }
@@ -158,6 +170,7 @@ virtual eq::VisitorResult visit( eq::View* view )
 
 Config::Config( eq::ServerPtr parent )
     : eq::Config( parent )
+    , _thread_hint( true )
     , _appRenderTick( 0U )
 {
 LBINFO << "=====> Config::Config(" << (void *)this << ")" << std::endl;
@@ -183,8 +196,10 @@ LBINFO << "=====> Config::Config(" << (void *)this << ")" << std::endl;
     ds->setNumOfHttpDatabaseThreadsHint( 2 );
 #endif
 
+#if 0
     _ico = new osgUtil::IncrementalCompileOperation( );
     _ico->setTargetFrameRate( 60.0f );
+#endif
 
     _pager = osgDB::DatabasePager::create( );
     _pager->setUnrefImageDataAfterApplyPolicy( false, false );
@@ -208,7 +223,7 @@ LBINFO << "-----> Config::init( )" << std::endl;
     bool init = false;
 
     _viewer = new CompositeViewer;
-    _viewer->setThreadingModel( osgViewer::ViewerBase::ThreadPerCamera );
+    _viewer->setThreadingModel( osgViewer::ViewerBase::SingleThreaded );
     _viewer->setStartTick( osg::Timer::instance( )->getStartTick( ));
     if( _ico.valid( ))
         _viewer->setIncrementalCompileOperation( _ico );
@@ -243,6 +258,8 @@ bool Config::exit( )
 
 uint32_t Config::startFrame( )
 {
+LBINFO << "-----> Config<" << getName( ) << ">::startFrame( )" << std::endl;
+
     ViewUpdater m;
     accept( m );
 
@@ -252,6 +269,7 @@ uint32_t Config::startFrame( )
 
     uint32_t ret = eq::Config::startFrame( _frameData.commit( ));
 
+    // Need to wait one frame to see if Nodes/Channels take all the views away
     if(( _viewer->getNumViews( ) > 0 ) && ( ++_appRenderTick > 1 ))
     {
         if( !_gc.valid( ) && !appInitGL( ))
@@ -263,24 +281,30 @@ uint32_t Config::startFrame( )
 
             _viewer->setGlobalContext( _gc );
 
-            _viewer->frameStart( getCurrentFrame( ), _frameData, false );
+            _viewer->frameStart( getCurrentFrame( ), _frameData );
 
-            _viewer->renderingTraversals( );
+            _viewer->renderingTraversals( _thread_hint );
         }
     }
+
+LBINFO << "<----- Config<" << getName( ) << ">::startFrame( )" << std::endl;
 
     return ret;
 }
 
 uint32_t Config::finishFrame( )
 {
+LBINFO << "-----> Config<" << getName( ) << ">::finishFrame( )" << std::endl;
+
     if( _viewer->getNumViews( ) > 0 )
     {
         if( _gc.valid( ))
-            _viewer->frameDrawFinish( false );
+            _viewer->frameDrawFinish( );
     }
     else
         _appRenderTick = 0U;
+
+LBINFO << "<----- Config<" << getName( ) << ">::finishFrame( )" << std::endl;
 
     return eq::Config::finishFrame( );
 }
@@ -462,6 +486,62 @@ void Config::releaseOSGView( osgViewer::View* osgView )
     }
 }
 
+void Config::createOverlay( osgEarth::Util::Controls::ControlCanvas* cc,
+        eq::View* view )
+{
+    // osgDB is not thread safe
+    static lunchbox::Lock lock;
+    lunchbox::ScopedWrite _mutex( lock );
+
+    View* v = static_cast< View* >( view );
+
+    LBASSERT( v->getOverlayID( ) == 1 ); // TODO : multiple overlays
+
+    using namespace osgEarth::Symbology;
+    using namespace osgEarth::Util::Controls;
+
+    {
+        VBox* center = new VBox( );
+        center->setFrame( new RoundedFrame( ));
+        center->getFrame()->setBackColor( 0, 0, 0, 0.5 );
+        center->setPadding( 10 );
+        center->setMargin( 10 );
+        center->setHorizAlign( Control::ALIGN_LEFT );
+        center->setVertAlign( Control::ALIGN_BOTTOM );
+
+        osg::ref_ptr< osg::Image > image =
+            osgDB::readImageFile("/afs/cmf/users/dkleiner/nrl-dc-logo.png");
+        if ( image.valid( ))
+        {
+            ImageControl* imageControl = new ImageControl( image.get( ));
+            imageControl->setHorizAlign( Control::ALIGN_CENTER );
+
+            center->addControl( imageControl );
+        }
+
+        cc->addControl( center );
+
+#if 1
+        HBox* bottom = new HBox( );
+        bottom->setFrame( new RoundedFrame( ));
+        bottom->getFrame( )->setBackColor( 0, 0, 0, 0.5 );
+        bottom->setMargin( 10 );
+        bottom->setVertAlign( Control::ALIGN_BOTTOM );
+        bottom->setHorizAlign( Control::ALIGN_CENTER );
+
+        LonLatLabelControl* lonlat = new LonLatLabelControl( );
+        lonlat->setMargin( 10 );
+        lonlat->setBackColor( 0, 0, 0, 0.5 );
+        lonlat->setActiveColor( 0, 0, 0, 0.5 );
+        bottom->addControl( lonlat );
+
+        cc->addControl( bottom );
+
+        cc->addUpdateCallback( new ControlUpdateCallback( v, lonlat ));
+#endif
+    }
+}
+
 osg::Group* Config::getScene( const eq::uint128_t& sceneID )
 {
     LBASSERT( sceneID == 1 ); // TODO : multiple scenes
@@ -561,7 +641,16 @@ osg::Group* Config::getScene( const eq::uint128_t& sceneID )
 #endif
 
         _scene = group;
+
+        // make sure that existing scene graph objects are allocated with
+        // thread safe ref/unref
+        _scene->setThreadSafeRefUnref( true );
     }
+
+    osg::ref_ptr< osg::DisplaySettings > ds =
+        osg::DisplaySettings::instance( );
+    _scene->resizeGLObjectBuffers( ds->getMaxNumberOfGraphicsContexts( ));
+
     return _scene.get( );
 }
 
@@ -743,6 +832,8 @@ LBWARN << "xy: " << x << ", " << y << " in " << pvp << std::endl;
 
 bool Config::appInitGL( bool pbuffer )
 {
+LBINFO << "-----> Config<" << getName( ) << ">::appInitGL( )" << std::endl;
+
     osg::ref_ptr< osg::DisplaySettings > ds =
         osg::DisplaySettings::instance( );
 
@@ -769,8 +860,6 @@ bool Config::appInitGL( bool pbuffer )
 
     LBCHECK( _gc->realize( ));
 
-    _gc->makeCurrent( );
-
     if( _ico.valid( ))
         _ico->addGraphicsContext( _gc );
 
@@ -786,6 +875,8 @@ bool Config::appInitGL( bool pbuffer )
             maxBufferObjectPoolSize );
 
     Window::initCapabilities( _gc );
+
+LBINFO << "<----- Config<" << getName( ) << ">::appInitGL( )" << std::endl;
 
     return true;
 }

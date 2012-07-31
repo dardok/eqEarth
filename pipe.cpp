@@ -1,5 +1,7 @@
 #include "pipe.h"
 
+#include "config.h"
+
 namespace eqEarth
 {
 // ----------------------------------------------------------------------------
@@ -23,6 +25,10 @@ LBINFO << "-----> Pipe::configInit(" << initID << ")" << std::endl;
 
     if( !eq::Pipe::configInit( initID ))
         goto out;
+
+    {
+        static_cast< Config* >( getConfig( ))->setThreadHint( isThreaded( ));
+    }
 
     init = true;
 

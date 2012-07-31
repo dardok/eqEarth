@@ -25,6 +25,8 @@ LBINFO << "<===== Node::~Node(" << (void *)this << ")" << std::endl;
 
 void Node::addGraphicsContext( osg::GraphicsContext* context )
 {
+    LB_TS_NOT_THREAD( _nodeThread );
+
     Config* config = static_cast< Config* >( getConfig( ));
     osg::ref_ptr< osgUtil::IncrementalCompileOperation > ico =
         config->getIncrementalCompileOperation( );
@@ -40,6 +42,8 @@ void Node::addGraphicsContext( osg::GraphicsContext* context )
 
 void Node::removeGraphicsContext( osg::GraphicsContext* context )
 {
+    LB_TS_NOT_THREAD( _nodeThread );
+
     Config* config = static_cast< Config* >( getConfig( ));
     osg::ref_ptr< osgUtil::IncrementalCompileOperation > ico =
         config->getIncrementalCompileOperation( );
@@ -55,6 +59,8 @@ void Node::removeGraphicsContext( osg::GraphicsContext* context )
 
 void Node::addCameraToOSGView( const eq::uint128_t& id, osg::Camera* camera )
 {
+    LB_TS_NOT_THREAD( _nodeThread );
+
     Config* config = static_cast< Config* >( getConfig( ));
 
 //LBINFO << "-----> Node::addCameraToView(" << id << ")" << std::endl;
@@ -97,6 +103,8 @@ void Node::addCameraToOSGView( const eq::uint128_t& id, osg::Camera* camera )
 void Node::removeCameraFromOSGView( const eq::uint128_t& id,
         osg::Camera* camera )
 {
+    LB_TS_NOT_THREAD( _nodeThread );
+
     LBASSERT( _viewer.valid( ));
 
     const bool needViewerLock = ( getPipes( ).size( ) > 1 );
@@ -171,8 +179,8 @@ bool Node::configExit( )
 void Node::frameStart( const eq::uint128_t& frameID,
         const uint32_t frameNumber )
 {
-//LBINFO << "-----> Node<" << getName( ) << ">::frameStart("
-//    << frameID << ", " << frameNumber << ")" << std::endl;
+LBINFO << "-----> Node<" << getName( ) << ">::frameStart("
+    << frameID << ", " << frameNumber << ")" << std::endl;
 
     _frameData.sync( frameID );
     _frameNumber = frameNumber;
@@ -187,27 +195,27 @@ void Node::frameStart( const eq::uint128_t& frameID,
     // aka "dispatch the rendering threads" - unlocks Channel::frameDraw!
     eq::Node::frameStart( frameID, frameNumber );
 
-//LBINFO << "<----- Node<" << getName( ) << ">::frameStart("
-//    << frameID << ", " << frameNumber << ")" << std::endl;
+LBINFO << "<----- Node<" << getName( ) << ">::frameStart("
+    << frameID << ", " << frameNumber << ")" << std::endl;
 }
 
 void Node::frameFinish( const eq::uint128_t& frameID,
         const uint32_t frameNumber )
 {
-//LBINFO << "-----> Node<" << getName( ) << ">::frameFinish("
-//    << frameID << ", " << frameNumber << ")" << std::endl;
+LBINFO << "-----> Node<" << getName( ) << ">::frameFinish("
+    << frameID << ", " << frameNumber << ")" << std::endl;
 
     eq::Node::frameFinish( frameID, frameNumber );
 
-//LBINFO << "<----- Node<" << getName( ) << ">::frameFinish("
-//    << frameID << ", " << frameNumber << ")" << std::endl;
+LBINFO << "<----- Node<" << getName( ) << ">::frameFinish("
+    << frameID << ", " << frameNumber << ")" << std::endl;
 }
 
 void Node::frameDrawFinish( const eq::uint128_t& frameID,
         const uint32_t frameNumber )
 {
-//LBINFO << "-----> Node<" << getName( ) << ">::frameDrawFinish("
-//    << frameID << ", " << frameNumber << ")" << std::endl;
+LBINFO << "-----> Node<" << getName( ) << ">::frameDrawFinish("
+    << frameID << ", " << frameNumber << ")" << std::endl;
 
     if( _viewer.valid( ))
     {
@@ -218,8 +226,8 @@ void Node::frameDrawFinish( const eq::uint128_t& frameID,
 
     eq::Node::frameDrawFinish( frameID, frameNumber );
 
-//LBINFO << "<----- Node<" << getName( ) << ">::frameDrawFinish("
-//    << frameID << ", " << frameNumber << ")" << std::endl;
+LBINFO << "<----- Node<" << getName( ) << ">::frameDrawFinish("
+    << frameID << ", " << frameNumber << ")" << std::endl;
 }
 
 void Node::cleanup( )
@@ -233,13 +241,15 @@ void Node::cleanup( )
 
 void Node::renderLocked( osgViewer::Renderer* renderer ) const
 {
+    LB_TS_NOT_THREAD( _nodeThread );
+
     LBASSERT( renderer );
 
     renderer->cull( );
 
     {
-        const bool needRenderLock = ( getPipes( ).size( ) > 1 );
-        lunchbox::ScopedWrite _mutex( needRenderLock ? &_render_lock : 0 );
+        const bool needViewerLock = 0;//( getPipes( ).size( ) > 1 );
+        lunchbox::ScopedWrite _mutex( needViewerLock ? &_viewer_lock : 0 );
 
         EQ_GL_CALL( renderer->draw( ));
     }
