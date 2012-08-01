@@ -278,6 +278,33 @@ void Channel::frameAssemble( const eq::uint128_t& frameID )
 //    << frameID << ")" << std::endl;
 }
 
+void Channel::frameReadback( const eq::uint128_t& frameID )
+{
+//LBINFO << "-----> Channel<" << getName( ) << ">::frameReadback("
+//    << frameID << ")" << std::endl;
+
+#if 0
+    const eq::Frames& frames = getOutputFrames();
+    for( eq::FramesCIter i = frames.begin(); i != frames.end(); ++i )
+    {
+        eq::Frame* frame = *i;
+        // OPT: Drop alpha channel from all frames during network transport
+        frame->setAlphaUsage( false );
+
+        if( false )
+            frame->useCompressor( eq::Frame::BUFFER_COLOR, EQ_COMPRESSOR_AUTO );
+        else
+            frame->useCompressor( eq::Frame::BUFFER_COLOR, EQ_COMPRESSOR_NONE );
+    }
+#endif
+
+    eq::Channel::frameReadback( frameID );
+
+//LBINFO << "<----- Channel<" << getName( ) << ">::frameReadback("
+//    << frameID << ")" << std::endl;
+
+}
+
 bool Channel::processEvent( const eq::Event& event )
 {
     if(  _viewer2d.valid( ))

@@ -22,7 +22,8 @@ public:
     void frameStart( const uint32_t frameNumber, const FrameData& frameData );
     void frameDrawFinish( );
 
-    virtual void renderingTraversals( bool needMakeCurrent );
+    // AppNode only
+    virtual void renderingTraversals( bool needMakeCurrentInThisThread );
     virtual void realize( );
 };
 }
