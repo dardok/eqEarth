@@ -1,6 +1,6 @@
 #include "error.h"
 
-#include <co/base/types.h>
+#include <eq/fabric/types.h>
 
 namespace eqEarth
 {
@@ -15,7 +15,7 @@ struct ErrorData
 ErrorData _errors[] = {
     { ERROR_EQEARTH_APPCONTEXT_FAILED, "Can't create local app context" },
     { ERROR_EQEARTH_LOADMODEL_FAILED, "Can't load model" },
-    { ERROR_EQEARTH_MAPOBJECT_FAILED, 
+    { ERROR_EQEARTH_MAPOBJECT_FAILED,
       "Mapping data from application process failed" },
 
     { 0, "" } // last!
@@ -24,7 +24,8 @@ ErrorData _errors[] = {
 
 void initErrors( )
 {
-    co::base::ErrorRegistry& registry = co::base::Global::getErrorRegistry( );
+    eq::fabric::ErrorRegistry& registry =
+        eq::fabric::Global::getErrorRegistry( );
 
     for( size_t i=0; _errors[i].code != 0; ++i )
         registry.setString( _errors[i].code, _errors[i].text );
@@ -32,7 +33,8 @@ void initErrors( )
 
 void exitErrors( )
 {
-    co::base::ErrorRegistry& registry = co::base::Global::getErrorRegistry( );
+    eq::fabric::ErrorRegistry& registry =
+        eq::fabric::Global::getErrorRegistry( );
 
     for( size_t i=0; _errors[i].code != 0; ++i )
         registry.eraseString( _errors[i].code );

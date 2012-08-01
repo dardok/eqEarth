@@ -44,7 +44,7 @@ void initCapabilities( )
     osg::ref_ptr< osg::GraphicsContext::WindowingSystemInterface > original =
         osg::GraphicsContext::getWindowingSystemInterface( );
     osg::GraphicsContext::setWindowingSystemInterface( this );
-    EQ_GL_CALL( osgEarth::Registry::instance( )->getCapabilities( ));
+    osgEarth::Registry::instance( )->getCapabilities( );
     osg::GraphicsContext::setWindowingSystemInterface( original );
 }
 
@@ -170,7 +170,7 @@ LBINFO << "-----> Window<" << getName( ) << ">::frameStart("
     _window->makeCurrent( );
 
     // Runs the IncrementalCompileOperation if installed
-    EQ_GL_CALL( _window->runOperations( ));
+    _window->runOperations( );
 
     eq::Window::frameStart( frameID, frameNumber );
 

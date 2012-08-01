@@ -251,7 +251,7 @@ void Node::renderLocked( osgViewer::Renderer* renderer ) const
         const bool needViewerLock = 0;//( getPipes( ).size( ) > 1 );
         lunchbox::ScopedWrite _mutex( needViewerLock ? &_viewer_lock : 0 );
 
-        EQ_GL_CALL( renderer->draw( ));
+        renderer->draw( );
     }
 }
 }

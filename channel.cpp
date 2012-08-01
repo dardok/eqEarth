@@ -59,7 +59,7 @@ LBINFO << "-----> Channel::configInit(" << initID <<
         _camera->setReferenceFrame( osg::Transform::ABSOLUTE_RF );
         _camera->setAllowEventFocus( false );
 
-        if( false/*isDestination( )*/)
+        if( isDestination( ))
         {
 #if 0
             const eq::PixelViewport& pvp = getPixelViewport( );
@@ -175,7 +175,7 @@ LBINFO << "-----> Channel<" << getName( ) << ">::frameClear("
         gl2e->glUseProgram( 0 ); // Icky...
     }
 
-    EQ_GL_CALL( glEnable( GL_SCISSOR_TEST ));
+    glEnable( GL_SCISSOR_TEST );
 
     eq::Channel::frameClear( frameID );
 
