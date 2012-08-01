@@ -164,16 +164,13 @@ void CompositeViewer::frameDrawFinish(  )
 
 void CompositeViewer::renderingTraversals( bool needMakeCurrentInThisThread )
 {
-    using namespace osgViewer;
-
     Contexts contexts;
     getContexts( contexts );
 
-    Contexts::iterator itr;
-
     bool doneMakeCurrentInThisThread = false;
 
-    for( itr = contexts.begin( ); itr != contexts.end( ); ++itr )
+    for( Contexts::iterator itr = contexts.begin( );
+            itr != contexts.end( ); ++itr )
     {
         if(( *itr )->valid( ))
         {
@@ -186,7 +183,7 @@ void CompositeViewer::renderingTraversals( bool needMakeCurrentInThisThread )
         }
     }
 
-    if (doneMakeCurrentInThisThread)
+    if( doneMakeCurrentInThisThread )
         releaseContext( );
 }
 

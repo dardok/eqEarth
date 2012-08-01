@@ -65,7 +65,7 @@ private:
 
     private:
         View* const _view;
-        friend class eqEarth::View;
+        friend class View;
     };
 
     Proxy _proxy;
