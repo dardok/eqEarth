@@ -13,8 +13,7 @@ public:
     // AppNode only
     void setGlobalContext( osg::GraphicsContext *context );
 
-    static osgViewer::View* createOSGView( const eq::uint128_t& id,
-        bool overrideRenderer = true );
+    static osgViewer::View* createOSGView( const eq::uint128_t& id );
     osgViewer::View* findOSGViewByID( const eq::uint128_t& id );
 
     void advance( const uint32_t frameNumber, const FrameData& frameData );

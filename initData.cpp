@@ -5,8 +5,8 @@ namespace eqEarth
 // ----------------------------------------------------------------------------
 
 InitData::InitData( )
-        : _frameDataID( eq::UUID::ZERO )
-        , _modelFileName( DEFAULT_MODEL )
+    : _frameDataID( eq::UUID::ZERO )
+    , _modelFileName( DEFAULT_MODEL )
 {
 }
 
@@ -47,7 +47,7 @@ bool InitData::parseCommandLine( char **argv, int argc )
 }
 
 std::string InitData::_parseCommandLineParam( int argc, char** argv,
-    std::string param )
+        std::string param )
 {
     for ( int i = 1; i < argc; i++ )
     {

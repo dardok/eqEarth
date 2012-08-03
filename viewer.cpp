@@ -14,10 +14,9 @@ namespace eqEarth
 class osgView : public osgViewer::View
 {
 public:
-    osgView( const eq::uint128_t& id, bool overrideRenderer = true )
+    osgView( const eq::uint128_t& id )
         : osgViewer::View( )
-        , _id( id )
-        , _overrideRenderer( overrideRenderer ) { }
+        , _id( id ) { }
 
     const eq::uint128_t& getID( ) const { return _id; }
 
@@ -26,13 +25,11 @@ protected:
 
 private:
     const eq::uint128_t _id;
-    const bool _overrideRenderer;
 };
 
 osg::GraphicsOperation* osgView::createRenderer( osg::Camera* camera )
 {
-    return( _overrideRenderer ? new Renderer( camera ) :
-        osgViewer::View::createRenderer( camera ));
+    return new Renderer( camera );
 }
 
 // ----------------------------------------------------------------------------
@@ -56,10 +53,9 @@ void CompositeViewer::setGlobalContext( osg::GraphicsContext *context )
     }
 }
 
-osgViewer::View* CompositeViewer::createOSGView( const eq::uint128_t& id,
-        bool overrideRenderer )
+osgViewer::View* CompositeViewer::createOSGView( const eq::uint128_t& id )
 {
-    return new osgView( id, overrideRenderer );
+    return new osgView( id );
 }
 
 osgViewer::View* CompositeViewer::findOSGViewByID( const eq::uint128_t& id )
@@ -132,7 +128,7 @@ void CompositeViewer::frameStart( const uint32_t frameNumber,
 
         osg::ref_ptr< osg::Node > sceneData = scene ?
             scene->getSceneData( ) : 0;
-        if ( sceneData.valid( ))
+        if( sceneData.valid( ))
             sceneData->getBound( );
     }
 

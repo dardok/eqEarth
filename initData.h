@@ -31,5 +31,6 @@ private:
 
     eq::uint128_t _frameDataID;
     std::string _modelFileName;
+    bool _ortho;
 };
 }

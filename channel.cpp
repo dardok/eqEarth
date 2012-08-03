@@ -54,8 +54,10 @@ LBINFO << "-----> Channel::configInit(" << initID <<
         _camera->setColorMask( new osg::ColorMask );
         _camera->setViewport( new osg::Viewport );
         _camera->setGraphicsContext( gc );
+#if 1
         _camera->setComputeNearFarMode(
             osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR );
+#endif
         _camera->setReferenceFrame( osg::Transform::ABSOLUTE_RF );
         _camera->setAllowEventFocus( false );
 
@@ -95,8 +97,10 @@ LBINFO << "-----> Channel::configInit(" << initID <<
             camera->setColorMask( new osg::ColorMask );
             camera->setViewport( new osg::Viewport );
             camera->setGraphicsContext( gc2 );
+#if 1
             camera->setComputeNearFarMode(
                 osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR );
+#endif
             camera->setReferenceFrame( osg::Transform::ABSOLUTE_RF );
             camera->setAllowEventFocus( false );
             camera->setClearMask( GL_DEPTH_BUFFER_BIT );
@@ -188,14 +192,31 @@ void Channel::frameDraw( const eq::uint128_t& frameID )
 LBINFO << "-----> Channel<" << getName( ) << ">::frameDraw("
     << frameID << ")" << std::endl;
 
-    //eq::Channel::frameDraw( frameID );
-
     const View* view = static_cast< const View* >( getView( ));
     LBASSERT( view );
 
     connectCameraToScene( view->getSceneID( ));
 
-    _applyScene( _camera );
+#if 1
+    // Update near/far
+    double near, far;
+    view->getNearFar( near, far );
+/*
+    double r = far - near;
+
+    const eq::Range &range = getRange( );
+    near += r * range.start;
+    far = near + ( r * range.end );
+*/
+    setNearFar( near, far );
+#endif
+
+    __applyBuffer( _camera );
+    __applyViewport( _camera );
+
+    __applyFrustum( _camera );
+
+    __applyHeadTransform( _camera );
 
     if( _renderer.valid( ))
         static_cast< const Node* >( getNode( ))->renderLocked( _renderer );
@@ -251,10 +272,16 @@ LBINFO << "-----> Channel<" << getName( ) << ">::frameViewFinish("
 
     if( _viewer2d.valid( ))
     {
-        _applyView( _camera2d );
+        __applyBuffer( _camera2d );
+        __applyViewport( _camera2d );
+
+        __applyScreenFrustum( _camera2d );
 
         _viewer2d->renderingTraversals( );
     }
+
+    applyBuffer( );
+    applyViewport( );
 
     const FrameData& frameData =
         static_cast< const Node* >( getNode( ))->getFrameData( );
@@ -567,85 +594,111 @@ void Channel::connectCameraToOverlay( const eq::uint128_t& id )
     }
 }
 
-void Channel::_applyScene( osg::Camera* camera )
-{
-    LB_TS_THREAD( _pipeThread );
-
-    _applyBuffer( camera );
-    _applyViewport( camera );
-    _applyPerspective( camera );
-    _applyPerspectiveTransform( camera );
-}
-
-void Channel::_applyView( osg::Camera* camera )
-{
-    LB_TS_THREAD( _pipeThread );
-
-    _applyBuffer( camera );
-    _applyViewport( camera );
-    _applyScreen( camera );
-    _applyScreenTransform( camera );
-}
-
-void Channel::_applyBuffer( osg::Camera* camera )
+void Channel::__applyBuffer( osg::Camera* camera )
 {
     if(( getFrameBufferObject( ) == 0 ) &&
         ( getWindow( )->getSystemWindow( )->getFrameBufferObject( ) == 0 ))
     {
-        camera->setDrawBuffer( getDrawBuffer( ));
         camera->setReadBuffer( getReadBuffer( ));
+        camera->setDrawBuffer( getDrawBuffer( ));
     }
+
+    __applyColorMask( camera );
+}
+
+void Channel::__applyColorMask( osg::Camera* camera ) const
+{
     const eq::ColorMask& colorMask = getDrawBufferMask( );
     camera->getColorMask( )->setMask(
         colorMask.red, colorMask.green, colorMask.blue, true );
 }
 
-void Channel::_applyViewport( osg::Camera* camera )
+void Channel::__applyViewport( osg::Camera* camera ) const
 {
     const eq::PixelViewport& pvp = getPixelViewport( );
     camera->setViewport( pvp.x, pvp.y, pvp.w, pvp.h );
 }
 
-void Channel::_applyPerspective( osg::Camera* camera )
+void Channel::__applyFrustum( osg::Camera* camera ) const
 {
-    const View* view = static_cast< const View* >( getView( ));
-    double near, far;
-    view->getNearFar( near, far );
-/*
-    double r = far - near;
+#if 0
+    if( useOrtho( ))
+        __applyOrtho( camera );
+    else
+        __applyPerspective( camera );
+#else
+    eq::Frustumf frustum = getFrustum( );
+    const eq::Vector2f jitter = getJitter( );
 
-    const eq::Range &range = getRange( );
-    near += r * range.start;
-    far = near + ( r * range.end );
-*/
-    setNearFar( near, far );
+    frustum.apply_jitter( jitter );
+    const eq::Matrix4f projection = useOrtho( ) ?
+        frustum.compute_ortho_matrix( ):
+        frustum.compute_matrix( );
+    camera->setProjectionMatrix( vmmlToOsg( projection ));
+#endif
+}
 
-    const eq::Frustumf& frustum = getPerspective( );
+void Channel::__applyPerspective( osg::Camera* camera ) const
+{
+    eq::Frustumf frustum = getPerspective( );
+    const eq::Vector2f jitter = getJitter( );
+
+    frustum.apply_jitter( jitter );
     camera->setProjectionMatrixAsFrustum(
         frustum.left( ), frustum.right( ),
         frustum.bottom( ), frustum.top( ),
         frustum.near_plane( ), frustum.far_plane( ));
 }
 
-void Channel::_applyPerspectiveTransform( osg::Camera* camera )
+void Channel::__applyOrtho( osg::Camera* camera ) const
 {
-    const eq::Matrix4d& viewMatrix =
-        static_cast< const View* >( getView( ))->getViewMatrix( );
-    const eq::Matrix4d& headTransform = getPerspectiveTransform( );
-    camera->setViewMatrix( vmmlToOsg( headTransform * viewMatrix ));
+    eq::Frustumf ortho = getOrtho( );
+    const eq::Vector2f jitter = getJitter( );
+
+    ortho.apply_jitter( jitter );
+    camera->setProjectionMatrixAsOrtho(
+        ortho.left( ), ortho.right( ),
+        ortho.bottom( ), ortho.top( ),
+        ortho.near_plane( ), ortho.far_plane( ));
 }
 
-void Channel::_applyScreen( osg::Camera* camera )
+void Channel::__applyHeadTransform( osg::Camera* camera ) const
+{
+#if 0
+    if( useOrtho( ))
+        __applyOrthoTransform( camera );
+    else
+        __applyPerspectiveTransform( camera );
+#else
+    osg::Matrix headView =
+        vmmlToOsg( static_cast< const View* >( getView( ))->getViewMatrix( ));
+    headView.postMult( vmmlToOsg( getHeadTransform( )));
+    camera->setViewMatrix( headView );
+#endif
+}
+
+void Channel::__applyPerspectiveTransform( osg::Camera* camera ) const
+{
+    osg::Matrix headView =
+        vmmlToOsg( static_cast< const View* >( getView( ))->getViewMatrix( ));
+    headView.postMult( vmmlToOsg( getPerspectiveTransform( )));
+    camera->setViewMatrix( headView );
+}
+
+void Channel::__applyOrthoTransform( osg::Camera* camera ) const
+{
+    osg::Matrix headView =
+        vmmlToOsg( static_cast< const View* >( getView( ))->getViewMatrix( ));
+    headView.postMult( vmmlToOsg( getOrthoTransform( )));
+    camera->setViewMatrix( headView );
+}
+
+void Channel::__applyScreenFrustum( osg::Camera* camera ) const
 {
     const eq::Frustumf& screen = getScreenFrustum( );
     camera->setProjectionMatrixAsOrtho(
         screen.left( ), screen.right( ),
         screen.bottom( ), screen.top( ),
         screen.near_plane( ), screen.far_plane( ));
-}
-
-void Channel::_applyScreenTransform( osg::Camera* camera )
-{
-    camera->setViewMatrix( vmmlToOsg( getOrthoTransform( )));
 }
 }

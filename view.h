@@ -61,7 +61,7 @@ private:
             const uint64_t dirtyBits );
         virtual void deserialize( co::DataIStream& is,
             const uint64_t dirtyBits );
-        virtual void notifyNewVersion() { sync( ); }
+        virtual void notifyNewVersion( ) { sync( ); }
 
     private:
         View* const _view;

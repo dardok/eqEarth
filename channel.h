@@ -49,6 +49,8 @@ protected:
 
     virtual bool processEvent( const eq::Event& event );
 
+    virtual bool useOrtho( ) const { return false; }
+
 protected:
     eq::uint128_t _sceneID;
     osg::ref_ptr< osg::Camera > _camera;
@@ -69,16 +71,16 @@ private:
     void connectCameraToScene( const eq::uint128_t& id );
     void connectCameraToOverlay( const eq::uint128_t& id );
 
-    void _applyScene( osg::Camera* camera );
-    void _applyView( osg::Camera* camera );
+    void __applyBuffer( osg::Camera* camera );
+    void __applyColorMask( osg::Camera* camera ) const;
+    void __applyViewport( osg::Camera* camera ) const;
+    void __applyFrustum( osg::Camera* camera ) const;
+    void __applyPerspective( osg::Camera* camera ) const;
+    void __applyOrtho( osg::Camera* camera ) const;
 
-    void _applyBuffer( osg::Camera* camera );
-    void _applyViewport( osg::Camera* camera );
-
-    void _applyPerspective( osg::Camera* camera );
-    void _applyPerspectiveTransform( osg::Camera* camera );
-
-    void _applyScreen( osg::Camera* camera );
-    void _applyScreenTransform( osg::Camera* camera );
+    void __applyHeadTransform( osg::Camera* camera ) const;
+    void __applyPerspectiveTransform( osg::Camera* camera ) const;
+    void __applyOrthoTransform( osg::Camera* camera ) const;
+    void __applyScreenFrustum( osg::Camera* camera ) const;
 };
 }

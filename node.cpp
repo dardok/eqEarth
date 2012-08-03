@@ -7,6 +7,11 @@
 
 #include <osg/DeleteHandler>
 
+#include <osgEarth/MapNode>
+#include <osgEarth/FindNode>
+
+#include <osgEarthUtil/AutoClipPlaneHandler>
+
 namespace eqEarth
 {
 // ----------------------------------------------------------------------------
@@ -92,12 +97,27 @@ void Node::addCameraToOSGView( const eq::uint128_t& id, osg::Camera* camera )
         _viewer->addView( osgView );
     }
 
-//LBINFO << "<----- Node::addCameraToView(" << id << ")" << std::endl;
-
     LBCHECK( osgView->addSlave( camera ));
+
+    osg::ref_ptr< osgEarth::MapNode > mapNode =
+        osgEarth::MapNode::findMapNode( osgView->getSceneData( ));
+#if 0
+    if( mapNode.valid( ) && mapNode->isGeocentric( ))
+    {
+        camera->addCullCallback(
+            new osgEarth::Util::AutoClipPlaneCullCallback( mapNode ));
+        camera->setComputeNearFarMode(
+            osg::CullSettings::COMPUTE_NEAR_FAR_USING_PRIMITIVES );
+        camera->setNearFarRatio( 0.00002 );
+    }
+#else
+    camera->setComputeNearFarMode( osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR );
+#endif
 
     if( needFrameStart )
         _viewer->frameStart( _frameNumber, getFrameData( ));
+
+//LBINFO << "<----- Node::addCameraToView(" << id << ")" << std::endl;
 }
 
 void Node::removeCameraFromOSGView( const eq::uint128_t& id,
@@ -248,7 +268,7 @@ void Node::renderLocked( osgViewer::Renderer* renderer ) const
     renderer->cull( );
 
     {
-        const bool needViewerLock = 0;//( getPipes( ).size( ) > 1 );
+        const bool needViewerLock = ( getPipes( ).size( ) > 1 );
         lunchbox::ScopedWrite _mutex( needViewerLock ? &_viewer_lock : 0 );
 
         renderer->draw( );

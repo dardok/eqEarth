@@ -21,12 +21,17 @@
 
 //#include <GL/glu.h>
 
+#include <osgEarthDrivers/tms/TMSOptions>
+#include <osgShadow/ShadowedScene>
+#include <osgShadow/ViewDependentShadowMap>
 #include <osgEarthUtil/ObjectPlacer>
+#include <osgEarthUtil/ShadowUtils>
 
 #include <osgEarthDrivers/kml/KML>
 #include <osgEarthDrivers/ocean_surface/OceanSurface>
 #include <osgEarth/ShaderComposition>
 #include <osgEarthSymbology/Color>
+#include <osgEarthDrivers/engine_osgterrain/OSGTerrainOptions>
 
 #define NFR_AT_RADIUS 0.00001
 #define NFR_AT_DOUBLE_RADIUS 0.0049
@@ -87,8 +92,12 @@ virtual eq::VisitorResult visit( eq::View* view )
             osgEarth::MapNode::findMapNode( osgView->getSceneData( ));
         if( map )
         {
-            m = new EarthManipulator;
-            m->setNode( map->getTerrainEngine( ));
+            EarthManipulator* em = new EarthManipulator;
+            if( !map->isGeocentric( ))
+                em->getSettings()->setCameraProjection(
+                    EarthManipulator::PROJ_ORTHOGRAPHIC );
+            em->setNode( map->getTerrainEngine( ));
+            m = em;
         }
         else
         {
@@ -126,6 +135,7 @@ virtual eq::VisitorResult visit( eq::View* view )
     const osgGA::CameraManipulator* m = osgView->getCameraManipulator( );
     LBASSERT( m );
     const osg::Matrixd& viewMatrix = m->getInverseMatrix( );
+    //const osg::Matrixd& viewMatrix = osgView->getCamera( )->getViewMatrix( );
 
     /* VIEW MATRIX */
     v->setViewMatrix( osgToVmml( viewMatrix ));
@@ -133,23 +143,37 @@ virtual eq::VisitorResult visit( eq::View* view )
     /* NEAR/FAR */
     osgEarth::MapNode* map = osgEarth::MapNode::findMapNode(
         osgView->getSceneData( ));
-    if( map && map->isGeocentric( ))
+    if( map )
     {
-        osg::Vec3d eye, center, up;
-        viewMatrix.getLookAt( eye, center, up );
-        double d = eye.length( );
-
-        double rp = map->getMap( )->
-            getProfile( )->getSRS( )->getEllipsoid()->getRadiusPolar( );
-
-        if( d > rp )
+        if( map->isGeocentric( ))
         {
-            double zf = ::sqrt( d * d - rp * rp );
-            double nfr = NFR_AT_RADIUS + NFR_AT_DOUBLE_RADIUS *
-                (( d - rp ) / d );
-            double zn = osg::clampAbove( zf * nfr, 1.0 );
+            osg::Vec3d eye, center, up;
+            viewMatrix.getLookAt( eye, center, up );
+            double d = eye.length( );
+
+            double rp = map->getMap( )->
+                getProfile( )->getSRS( )->getEllipsoid()->getRadiusPolar( );
+
+            if( d > rp )
+            {
+                double zf = ::sqrt( d * d - rp * rp );
+                double nfr = NFR_AT_RADIUS + NFR_AT_DOUBLE_RADIUS *
+                    (( d - rp ) / d );
+                double zn = osg::clampAbove( zf * nfr, 1.0 );
+
+                v->setNearFar( zn, zf );
+
+                //LBWARN << "nf = " << zn << ", " << zf << std::endl;
+            }
+        }
+        else
+        {
+            double d, zn, zf;
+            viewMatrix.getOrtho( d, d, d, d, zn, zf );
 
             v->setNearFar( zn, zf );
+
+            //LBWARN << "nf = " << zn << ", " << zf << std::endl;
         }
     }
 
@@ -546,97 +570,60 @@ osg::Group* Config::getScene( const eq::uint128_t& sceneID )
 
     if( !_scene.valid( ))
     {
+        using namespace osgEarth;
+        using namespace osgEarth::Drivers;
+        using namespace osgEarth::Util;
+
         osg::Group* group = new osg::Group( );
 
-        group->addChild( osgDB::readNodeFile( _initData.getModelFileName( )));
+        Map* map = NULL;
+        MapNode* mapNode = NULL;
 
-        osgEarth::MapNode* map = osgEarth::MapNode::findMapNode( group );
-        if( map && map->getMap( )->getProfile( ) &&
-            map->getMap()->isGeocentric( ))
+#if 1
+        group->addChild( osgDB::readNodeFile( _initData.getModelFileName( )));
+        mapNode = osgEarth::MapNode::findMapNode( group );
+        if( mapNode )
+            map = mapNode->getMap( );
+#else
+        map = new Map( );
+
+        TMSOptions imagery;
+        imagery.url() =
+            "http://amati-ib0.largedata.net/readymap/tiles/1.0.0/10/";
+        map->addImageLayer( new ImageLayer( "BaseImagery", imagery ));
+
+        TMSOptions elevation;
+        elevation.url() =
+            "http://amati-ib0.largedata.net/readymap/tiles/1.0.0/1/";
+        map->addElevationLayer( new ElevationLayer( "Elevation", elevation ));
+
+        mapNode = new MapNode( map );
+
+        group->addChild( mapNode );
+#endif
+
+        if( mapNode && map->getProfile( ) && map->isGeocentric( ))
         {
-            osgEarth::Util::SkyNode* sky =
-                new osgEarth::Util::SkyNode( map->getMap( ));
+#if 1
+            osgEarth::Util::SkyNode* sky = new osgEarth::Util::SkyNode( map );
 
             sky->addUpdateCallback( new SkyUpdateCallback );
+            sky->setAmbientBrightness( 0.4f );
 
             group->addChild( sky );
+#endif
 
 #if 0
+            const osgEarth::Util::Config& externals =
+                mapNode->externalConfig( );
+
             osgEarth::Drivers::OceanSurfaceNode* ocean =
-                new osgEarth::Drivers::OceanSurfaceNode( map,
-                    map->externalConfig( ).child( "ocean" ));
+                new osgEarth::Drivers::OceanSurfaceNode( mapNode,
+                    externals.child( "ocean" ));
 
             group->addChild( ocean );
 #endif
-
-            osgEarth::Util::ObjectPlacer o( map );
-
-/*
-            {
-               osg::ref_ptr< osg::Image > i = osgDB::readImageFile( "134.207.0.141.gst" );
-               if( i.valid( ))
-               {
-                  osg::ref_ptr< osg::ImageStream > is = dynamic_cast< osg::ImageStream* >( i.get( ));
-
-                  osg::Vec3 pos(0.0f,0.0f,0.0f);
-                  osg::ref_ptr<osg::Drawable> drawable = myCreateTexturedQuadGeometry(pos, 640, 480, i, true, false, true);
-
-                  osg::ref_ptr<osg::Geode> geode = new osg::Geode;
-
-                  osg::StateSet* stateset = geode->getOrCreateStateSet();
-                  stateset->setMode(GL_LIGHTING,osg::StateAttribute::OFF);
-                  geode->addDrawable(drawable.get());
-
-                  group->addChild( o.placeNode( geode, 39.997, -74.6157, 10 ));
-               }
-            }
-*/
-
-/*
-            {
-               osg::ref_ptr< osg::Node > n = osgDB::readNodeFile(
-                  "/lustre/site_x/data2/models/FtDix/archive.txp" );
-               if( n.valid( ))
-                  group->addChild( o.placeNode( n, 39.997, -74.6157, 5 ));
-            }
-
-            {
-               osg::ref_ptr< osg::Node > n = osgDB::readNodeFile(
-                  "/lustre/site_x/data2/models/FtOrdMOUT/Flythough/archive.txp" );
-               if( n.valid( ))
-                  group->addChild( o.placeNode( n, 36.5824, -121.8091, 100 ));
-            }
-
-*/
-/*
-            {
-                osgEarth::Drivers::KMLOptions kmlo;
-                kmlo.declutter( ) = true;
-                kmlo.defaultIconImage( ) = osgEarth::Util::URI( "http://www.osgearth.org/chrome/site/pushpin_yellow.png" ).getImage( );
-
-               osg::ref_ptr< osg::Node > kml = osgEarth::Drivers::KML::load( osgEarth::Util::URI( "/lustre/cmf/users/d/dkleiner/forks/osgearth/data/BostonBldgs.kmz" ), map, kmlo );
-               if( kml.valid( ))
-                  group->addChild( kml );
-            }
-*/
-
         }
-
-#if 0
-        {
-            char s_source[] =
-                "void osgearth_frag_applyColoring( inout vec4 color ) { \n"
-                "    color = vec4(1.0, 0.0, 0.0, 1.0); \n"
-                "} \n";
-
-            osgEarth::VirtualProgram* vp = new osgEarth::VirtualProgram();
-            vp->setShader( "osgearth_frag_applyColoring",
-                new osg::Shader(osg::Shader::FRAGMENT, s_source),
-                osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE );
-            group->getOrCreateStateSet()->setAttributeAndModes( vp,
-                osg::StateAttribute::ON );
-        }
-#endif
 
         _scene = group;
 
@@ -764,22 +751,46 @@ void Config::handleMouseEvent( const eq::ConfigEvent* event, View* view,
             // viewport
             camera->setViewport( 0, 0, pvp.w, pvp.h );
 
-            // perspective
-            double near, far;
-            eq::Frustumf frustum = event->data.context.frustum;
-            view->getNearFar( near, far );
-            frustum.adjust_near( near );
-            frustum.far_plane( ) = far;
-            camera->setProjectionMatrixAsFrustum(
-                frustum.left( ), frustum.right( ),
-                frustum.bottom( ), frustum.top( ),
-                frustum.near_plane( ), frustum.far_plane( ));
+            osgEarth::MapNode* map =
+                osgEarth::MapNode::findMapNode( osgView->getSceneData( ));
 
-            // perspective transform
-            const eq::Matrix4d& viewMatrix = view->getViewMatrix( );
-            const eq::Matrix4d& headTransform =
-                event->data.context.headTransform;
-            camera->setViewMatrix( vmmlToOsg( headTransform * viewMatrix));
+            if( map )
+            {
+                double near, far;
+                view->getNearFar( near, far );
+                const eq::Matrix4d& headView = view->getViewMatrix( );
+
+                if( map->isGeocentric( ))
+                {
+                    eq::Frustumf frustum = event->data.context.frustum;
+                    frustum.adjust_near( near );
+                    frustum.far_plane( ) = far;
+                    camera->setProjectionMatrixAsFrustum(
+                        frustum.left( ), frustum.right( ),
+                        frustum.bottom( ), frustum.top( ),
+                        frustum.near_plane( ), frustum.far_plane( ));
+
+                    const eq::Matrix4d& headTransform =
+                        event->data.context.headTransform;
+                    camera->setViewMatrix( vmmlToOsg( headTransform *
+                            headView ));
+                }
+                else
+                {
+                    eq::Frustumf frustum = event->data.context.ortho;
+                    frustum.adjust_near( near );
+                    frustum.far_plane( ) = far;
+                    camera->setProjectionMatrixAsOrtho(
+                        frustum.left( ), frustum.right( ),
+                        frustum.bottom( ), frustum.top( ),
+                        frustum.near_plane( ), frustum.far_plane( ));
+
+                    const eq::Matrix4d& orthoTransform =
+                        event->data.context.orthoTransform;
+                    camera->setViewMatrix( vmmlToOsg( orthoTransform *
+                            headView ));
+                }
+            }
 
             m->handleWithCheckAgainstIgnoreHandledEventsMask(
                 *itr->get( ), *osgView);
