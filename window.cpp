@@ -119,6 +119,9 @@ LBINFO << "-----> Window::configInitGL(" << initID <<
         traits->doubleBuffer = dc.doublebuffered;
         traits->pbuffer =
             ( getIAttribute( IATTR_HINT_DRAWABLE ) == eq::PBUFFER );
+        std::ostringstream version;
+        version << dc.glVersion;
+        traits->glContextVersion = version.str( );
 
         Window* sharedWindow =
             static_cast< Window* >( getSharedContextWindow( ));

@@ -3,8 +3,8 @@ CC = g++
 #EXTRA_CFLAGS = `sdl-config --cflags`
 #EXTRA_LIBS = `sdl-config --libs`
 
-#OPT = -O -DNDEBUG
-OPT = -g -Wall
+OPT = -O -DNDEBUG
+#OPT = -g -Wall
 
 D =
 #D = d
