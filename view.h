@@ -21,8 +21,8 @@ public:
     void setOverlayID( const eq::uint128_t& id );
     eq::uint128_t getOverlayID( ) const { return _overlayID; }
 
-    void setViewMatrix( const eq::Matrix4d& viewMatrix );
-    const eq::Matrix4d& getViewMatrix( ) const { return _viewMatrix; }
+    void setViewMatrix( const eq::Matrix4f& viewMatrix );
+    const eq::Matrix4f& getViewMatrix( ) const { return _viewMatrix; }
 
     void setNearFar( double near, double far );
     void getNearFar( double& near, double& far ) const;
@@ -30,9 +30,9 @@ public:
     void setLatLon( double lat, double lon );
     void getLatLon( double& lat, double& lon ) const;
 
-    void setWorldPointer( const eq::Vector3d& origin,
-        const eq::Vector3d& direction );
-    void getWorldPointer( eq::Vector3d& origin, eq::Vector3d& direction ) const;
+    void setWorldPointer( const eq::Vector3f& origin,
+        const eq::Vector3f& direction );
+    void getWorldPointer( eq::Vector3f& origin, eq::Vector3f& direction ) const;
 
     // AppNode only
     void setOSGView( osgViewer::View* osgView ) { _osgView = osgView; }
@@ -72,11 +72,11 @@ private:
     friend class Proxy;
     eq::uint128_t _sceneID;
     eq::uint128_t _overlayID;
-    eq::Matrix4d _viewMatrix;
+    eq::Matrix4f _viewMatrix;
     double _near, _far;
     double _lat, _lon;
-    eq::Vector3d _origin;
-    eq::Vector3d _direction;
+    eq::Vector3f _origin;
+    eq::Vector3f _direction;
 
     osg::ref_ptr< osgViewer::View > _osgView;
 };

@@ -8,7 +8,7 @@
 #include <osg/DeleteHandler>
 
 #include <osgEarth/MapNode>
-#include <osgEarth/FindNode>
+#include <osgEarth/NodeUtils>
 
 #include <osgEarthUtil/AutoClipPlaneHandler>
 

@@ -9,11 +9,11 @@ View::View( eq::Layout* parent )
     , _proxy( this )
     , _sceneID( eq::UUID::ZERO )
     , _overlayID( eq::UUID::ZERO )
-    , _viewMatrix( eq::Matrix4d::IDENTITY )
+    , _viewMatrix( eq::Matrix4f::IDENTITY )
     , _near( 0.01 ), _far( 100.0 )
     , _lat( 0.0 ), _lon( 0.0 )
-    , _origin( eq::Vector3d::ZERO )
-    , _direction( eq::Vector3d::ZERO )
+    , _origin( eq::Vector3f::ZERO )
+    , _direction( eq::Vector3f::ZERO )
 {
 EQINFO << "=====> View::View(" << (void *)this << ")" << std::endl;
 
@@ -45,7 +45,7 @@ void View::setOverlayID( const eq::uint128_t& id )
     }
 }
 
-void View::setViewMatrix( const eq::Matrix4d& viewMatrix )
+void View::setViewMatrix( const eq::Matrix4f& viewMatrix )
 {
     _viewMatrix = viewMatrix;
     _proxy.setDirty( Proxy::DIRTY_CAMERA );
@@ -83,8 +83,8 @@ void View::getLatLon( double& lat, double& lon ) const
     lon = _lon;
 }
 
-void View::setWorldPointer( const eq::Vector3d& origin,
-    const eq::Vector3d& direction )
+void View::setWorldPointer( const eq::Vector3f& origin,
+    const eq::Vector3f& direction )
 {
     if(( origin != _origin ) || ( direction != _direction ))
     {
@@ -94,8 +94,8 @@ void View::setWorldPointer( const eq::Vector3d& origin,
     }
 }
 
-void View::getWorldPointer( eq::Vector3d& origin,
-    eq::Vector3d& direction ) const
+void View::getWorldPointer( eq::Vector3f& origin,
+    eq::Vector3f& direction ) const
 {
     origin = _origin;
     direction = _direction;

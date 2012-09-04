@@ -17,7 +17,7 @@
 #include <osg/TextureRectangle>
 #include <osgDB/ReadFile>
 
-#include <osgEarth/FindNode>
+#include <osgEarth/NodeUtils>
 
 //#include <GL/glu.h>
 
