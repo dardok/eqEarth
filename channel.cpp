@@ -334,7 +334,7 @@ void Channel::frameReadback( const eq::uint128_t& frameID )
 
 bool Channel::processEvent( const eq::Event& event )
 {
-    if(  _viewer2d.valid( ))
+    if( _viewer2d.valid( ))
     {
         osg::ref_ptr< osgGA::EventQueue > eventQueue =
             _viewer2d->getEventQueue( );
@@ -589,7 +589,7 @@ void Channel::connectCameraToOverlay( const eq::uint128_t& id )
             _camera2d->setColorMask( new osg::ColorMask );
 
             static_cast< Config* >( getConfig( ))->createOverlay( _camera2d,
-                    getNativeView( ) );
+                    getNativeView( ));
         }
     }
 }
