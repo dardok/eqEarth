@@ -352,20 +352,21 @@ bool Config::mapInitData( const eq::uint128_t& initDataID )
     return mapped;
 }
 
-bool Config::handleEvent( const eq::ConfigEvent* event )
+bool Config::handleEvent( eq::EventCommand command )
 {
     bool ret = false;
     const double time = static_cast< double >( getTime( )) / 1000.;
 
-    switch( event->data.type )
+    switch( command.getEventType( ))
     {
         case eq::Event::WINDOW_POINTER_WHEEL:
         case eq::Event::CHANNEL_POINTER_MOTION:
         case eq::Event::CHANNEL_POINTER_BUTTON_PRESS:
         case eq::Event::CHANNEL_POINTER_BUTTON_RELEASE:
         {
+            const eq::Event& event = command.get< eq::Event >();
             View* view =
-                selectCurrentView( event->data.context.view.identifier );
+                selectCurrentView( event.context.view.identifier );
             if( view && _eventQueue.valid( ))
             {
                 handleMouseEvent( event, view, time );
@@ -375,17 +376,19 @@ bool Config::handleEvent( const eq::ConfigEvent* event )
         }
         case eq::Event::KEY_PRESS:
         {
-            const int osgKey = eqKeyToOsg( event->data.key.key );
+            const eq::Event& event = command.get< eq::Event >();
+            const eq::KeyEvent& keyEvent = event.keyPress;
+            const int osgKey = eqKeyToOsg( keyEvent.key );
             if( _eventQueue.valid( ))
                 _eventQueue->keyPress( osgKey, time );
 
-            if( 's' == event->data.key.key )
+            if( 's' == keyEvent.key )
             {
                 _frameData.toggleStatistics( );
                 ret = true;
             }
 
-            if( 't' == event->data.key.key )
+            if( 't' == keyEvent.key )
             {
                 const eq::uint128_t& currentViewID =
                     _frameData.getCurrentViewID( );
@@ -402,7 +405,7 @@ bool Config::handleEvent( const eq::ConfigEvent* event )
                 ret = true;
             }
 
-            if( '1' == event->data.key.key )
+            if( '1' == keyEvent.key )
             {
                 eq::Canvas* canvas = find< eq::Canvas >( "clove" );
                 if( canvas )
@@ -416,19 +419,21 @@ bool Config::handleEvent( const eq::ConfigEvent* event )
         }
         case eq::Event::KEY_RELEASE:
         {
-            const int osgKey = eqKeyToOsg( event->data.key.key );
+            const eq::Event& event = command.get< eq::Event >();
+            const eq::KeyEvent& keyEvent = event.keyPress;
+            const int osgKey = eqKeyToOsg( keyEvent.key );
             if( _eventQueue.valid( ))
                 _eventQueue->keyRelease( osgKey, time );
             break;
         }
         case ConfigEvent::INTERSECTION:
         {
+#if 0
             const ConfigEvent* hitEvent =
                 static_cast< const ConfigEvent* >( event );
 
             LBINFO << std::fixed << hitEvent << " from " <<
                 hitEvent->data.originator << std::endl;
-#if 0
 if( _map.valid( ))
 {
 
@@ -450,7 +455,7 @@ hitEvent->hit.z( ), lat_rad, lon_rad, height );
     }
 
     if( !ret )
-        ret = eq::Config::handleEvent( event );
+        ret = eq::Config::handleEvent( command );
 
     return ret;
 }
@@ -675,28 +680,28 @@ View* Config::selectCurrentView( const eq::uint128_t& viewID )
     return view;
 }
 
-void Config::handleMouseEvent( const eq::ConfigEvent* event, View* view,
+void Config::handleMouseEvent( const eq::Event& event, View* view,
         double time )
 {
-    const eq::PixelViewport& pvp = event->data.context.pvp;
-    const uint32_t x = event->data.pointer.x;
-    const uint32_t y = event->data.pointer.y;
+    const eq::PixelViewport& pvp = event.context.pvp;
+    const uint32_t x = event.pointer.x;
+    const uint32_t y = event.pointer.y;
 
     LBASSERT( _eventQueue.valid( ));
 
-    switch( event->data.type )
+    switch( event.type )
     {
         case eq::Event::WINDOW_POINTER_WHEEL:
         {
             osgGA::GUIEventAdapter::ScrollingMotion sm =
                 osgGA::GUIEventAdapter::SCROLL_NONE;
-            if( event->data.pointer.xAxis > 0 )
+            if( event.pointer.xAxis > 0 )
                 sm = osgGA::GUIEventAdapter::SCROLL_UP;
-            else if( event->data.pointer.xAxis < 0 )
+            else if( event.pointer.xAxis < 0 )
                 sm = osgGA::GUIEventAdapter::SCROLL_DOWN;
-            else if( event->data.pointer.yAxis > 0 )
+            else if( event.pointer.yAxis > 0 )
                 sm = osgGA::GUIEventAdapter::SCROLL_RIGHT;
-            else if( event->data.pointer.yAxis < 0 )
+            else if( event.pointer.yAxis < 0 )
                 sm = osgGA::GUIEventAdapter::SCROLL_LEFT;
             _eventQueue->mouseScroll( sm, time );
             break;
@@ -707,7 +712,7 @@ void Config::handleMouseEvent( const eq::ConfigEvent* event, View* view,
             break;
         case eq::Event::CHANNEL_POINTER_BUTTON_PRESS:
         {
-            const unsigned int b = eqButtonToOsg( event->data.pointer.button );
+            const unsigned int b = eqButtonToOsg( event.pointer.button );
             if( b <= 3 )
             {
                 _eventQueue->setMouseInputRange( 0, 0, pvp.w, pvp.h );
@@ -717,7 +722,7 @@ void Config::handleMouseEvent( const eq::ConfigEvent* event, View* view,
         }
         case eq::Event::CHANNEL_POINTER_BUTTON_RELEASE:
         {
-            const unsigned int b = eqButtonToOsg( event->data.pointer.button );
+            const unsigned int b = eqButtonToOsg( event.pointer.button );
             if( b <= 3 )
             {
                 _eventQueue->setMouseInputRange( 0, 0, pvp.w, pvp.h );
@@ -762,7 +767,7 @@ void Config::handleMouseEvent( const eq::ConfigEvent* event, View* view,
 
                 if( map->isGeocentric( ))
                 {
-                    eq::Frustumf frustum = event->data.context.frustum;
+                    eq::Frustumf frustum = event.context.frustum;
                     frustum.adjust_near( near );
                     frustum.far_plane( ) = far;
                     camera->setProjectionMatrixAsFrustum(
@@ -771,13 +776,13 @@ void Config::handleMouseEvent( const eq::ConfigEvent* event, View* view,
                         frustum.near_plane( ), frustum.far_plane( ));
 
                     const eq::Matrix4d& headTransform =
-                        event->data.context.headTransform;
+                        event.context.headTransform;
                     camera->setViewMatrix( vmmlToOsg( headTransform *
                             headView ));
                 }
                 else
                 {
-                    eq::Frustumf frustum = event->data.context.ortho;
+                    eq::Frustumf frustum = event.context.ortho;
                     frustum.adjust_near( near );
                     frustum.far_plane( ) = far;
                     camera->setProjectionMatrixAsOrtho(
@@ -786,7 +791,7 @@ void Config::handleMouseEvent( const eq::ConfigEvent* event, View* view,
                         frustum.near_plane( ), frustum.far_plane( ));
 
                     const eq::Matrix4d& orthoTransform =
-                        event->data.context.orthoTransform;
+                        event.context.orthoTransform;
                     camera->setViewMatrix( vmmlToOsg( orthoTransform *
                             headView ));
                 }
@@ -803,23 +808,23 @@ void Config::handleMouseEvent( const eq::ConfigEvent* event, View* view,
     }
 }
 
-void Config::updateCurrentWorldPointer( const eq::ConfigEvent* event )
-{
 #if 0
-    const eq::PixelViewport& pvp = event->data.context.pvp;
+void Config::updateCurrentWorldPointer( const eq::ConfigEvent& event )
+{
+    const eq::PixelViewport& pvp = event.context.pvp;
 
-    float x = static_cast< float >( event->data.pointer.x ) + pvp.x;
-    float y = pvp.h - static_cast< float >( event->data.pointer.y ) + pvp.y;
+    float x = static_cast< float >( event.pointer.x ) + pvp.x;
+    float y = pvp.h - static_cast< float >( event.pointer.y ) + pvp.y;
 
 #if 0
 LBWARN << "xy: " << x << ", " << y << " in " << pvp << std::endl;
 #endif
 
     const eq::Matrix4d viewMatrix =
-        eq::Matrix4d( event->data.context.headTransform ) *
+        eq::Matrix4d( event.context.headTransform ) *
             _frameData.getViewMatrix( );
 
-    const eq::Frustumf& frustum = event->data.context.frustum;
+    const eq::Frustumf& frustum = event.context.frustum;
     const eq::Matrix4d projectionMatrix = frustum.compute_matrix( );
 
     eq::Vector3d p1, p2;
@@ -832,12 +837,12 @@ LBWARN << "xy: " << x << ", " << y << " in " << pvp << std::endl;
             viewMatrix.array, projectionMatrix.array, &pvp.x,
             &p2.x( ), &p2.y( ), &p2.z( )));
 
-    const eq::uint128_t& viewID = event->data.context.view.identifier;
+    const eq::uint128_t& viewID = event.context.view.identifier;
     View* view = static_cast< View* >( find< eq::View >( viewID ));
     LBASSERT( NULL != view );
     view->setWorldPointer( p1, p2 );
-#endif
 }
+#endif
 
 bool Config::appInitGL( bool pbuffer )
 {

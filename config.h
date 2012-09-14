@@ -31,7 +31,7 @@ public:
     const InitData& getInitData( ) const { return _initData; }
     bool mapInitData( const eq::uint128_t& initDataID );
 
-    virtual bool handleEvent( const eq::ConfigEvent* event );
+    virtual bool handleEvent( eq::EventCommand command );
 
 public:
     void setThreadHint( bool thread_hint ) { _thread_hint = thread_hint; }
@@ -75,9 +75,11 @@ protected:
 
 private:
     View* selectCurrentView( const eq::uint128_t& viewID );
-    void handleMouseEvent( const eq::ConfigEvent* event, View* view,
+    void handleMouseEvent( const eq::Event& event, View* view,
             double time );
-    void updateCurrentWorldPointer( const eq::ConfigEvent* event );
+#if 0
+    void updateCurrentWorldPointer( const eq::ConfigEvent& event );
+#endif
 
     bool appInitGL( bool pbuffer = true );
 
