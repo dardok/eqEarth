@@ -61,7 +61,7 @@ LBINFO << "-----> Channel::configInit(" << initID <<
         _camera->setReferenceFrame( osg::Transform::ABSOLUTE_RF );
         _camera->setAllowEventFocus( false );
 
-        if( isDestination( ))
+        if( false/*isDestination( )*/)
         {
 #if 0
             const eq::PixelViewport& pvp = getPixelViewport( );
