@@ -15,7 +15,7 @@ View::View( eq::Layout* parent )
     , _origin( eq::Vector3f::ZERO )
     , _direction( eq::Vector3f::ZERO )
 {
-EQINFO << "=====> View::View(" << (void *)this << ")" << std::endl;
+LBINFO << "=====> View::View(" << (void *)this << ")" << std::endl;
 
     setUserData( &_proxy );
 }
@@ -24,7 +24,7 @@ View::~View( )
 {
     setUserData( 0 );
 
-EQINFO << "<===== View::~View(" << (void *)this << ")" << std::endl;
+LBINFO << "<===== View::~View(" << (void *)this << ")" << std::endl;
 }
 
 void View::setSceneID( const eq::uint128_t& id )

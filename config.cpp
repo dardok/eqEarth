@@ -21,17 +21,27 @@
 
 //#include <GL/glu.h>
 
+#include <osgEarth/MapNode>
+#include <osgEarthUtil/EarthManipulator>
+#include <osgEarthUtil/Sky>
+#include <osgEarthUtil/Ocean>
+
+#if 0
 #include <osgEarthDrivers/tms/TMSOptions>
 #include <osgShadow/ShadowedScene>
 #include <osgShadow/ViewDependentShadowMap>
 #include <osgEarthUtil/ObjectPlacer>
 #include <osgEarthUtil/ShadowUtils>
+#include <osgEarthAnnotation/AnnotationRegistry>
+#include <osgEarthAnnotation/Decluttering>
 
 #include <osgEarthDrivers/kml/KML>
 #include <osgEarthDrivers/ocean_surface/OceanSurface>
 #include <osgEarth/ShaderComposition>
 #include <osgEarthSymbology/Color>
 #include <osgEarthDrivers/engine_osgterrain/OSGTerrainOptions>
+#include <osgEarthUtil/ObjectPlacer>
+#endif
 
 #define NFR_AT_RADIUS 0.00001
 #define NFR_AT_DOUBLE_RADIUS 0.0049
@@ -77,8 +87,10 @@ virtual eq::VisitorResult visit( eq::View* view )
     View* v = static_cast< View* >( view );
     osgViewer::View* osgView;
 
-    v->setSceneID( 1 );
-    v->setOverlayID( 1 );
+    lunchbox::uint128_t id( 1 );
+
+    v->setSceneID( id );
+    v->setOverlayID( id );
 
     osgView = _config->takeOrCreateOSGView( v->getSceneID( ));
 
@@ -352,6 +364,91 @@ bool Config::mapInitData( const eq::uint128_t& initDataID )
     return mapped;
 }
 
+bool Config::handleEvent( const eq::ConfigEvent* event )
+{
+    bool ret = false;
+    const double time = static_cast< double >( getTime( )) / 1000.;
+
+    switch( event->data.type )
+    {
+        case eq::Event::WINDOW_POINTER_WHEEL:
+        case eq::Event::CHANNEL_POINTER_MOTION:
+        case eq::Event::CHANNEL_POINTER_BUTTON_PRESS:
+        case eq::Event::CHANNEL_POINTER_BUTTON_RELEASE:
+        {
+            //const eq::Event& event = command.get< eq::Event >();
+            View* view =
+                selectCurrentView( event->data.context.view.identifier );
+            if( view && _eventQueue.valid( ))
+            {
+                handleMouseEvent( event, view, time );
+                ret = true;
+            }
+            break;
+        }
+        case eq::Event::KEY_PRESS:
+        {
+            //const eq::Event& event = command.get< eq::Event >();
+            //const eq::KeyEvent& keyEvent = event.keyPress;
+            //const int osgKey = eqKeyToOsg( keyEvent.key );
+            const int osgKey = eqKeyToOsg( event->data.keyPress.key );
+            if( _eventQueue.valid( ))
+                _eventQueue->keyPress( osgKey, time );
+
+            if( 's' == event->data.keyPress.key )
+            {
+                _frameData.toggleStatistics( );
+                ret = true;
+            }
+
+            if( 't' == event->data.keyPress.key )
+            {
+                const eq::uint128_t& currentViewID =
+                    _frameData.getCurrentViewID( );
+                View* view =
+                    static_cast< View* >( find< eq::View >( currentViewID ));
+                if( view )
+                {
+                    const eq::View::Mode mode = view->getMode( );
+                    if( eq::View::MODE_MONO == mode )
+                        view->changeMode( eq::View::MODE_STEREO );
+                    else
+                        view->changeMode( eq::View::MODE_MONO );
+                }
+                ret = true;
+            }
+
+            if( '1' == event->data.keyPress.key )
+            {
+                eq::Canvas* canvas = find< eq::Canvas >( "clove" );
+                if( canvas )
+                {
+                    int64_t index = canvas->getActiveLayoutIndex( );
+                    canvas->useLayout( index ? 0 : 1 );
+                }
+                ret = true;
+            }
+            break;
+        }
+        case eq::Event::KEY_RELEASE:
+        {
+            //const eq::Event& event = command.get< eq::Event >();
+            //const eq::KeyEvent& keyEvent = event.keyPress;
+            //const int osgKey = eqKeyToOsg( keyEvent.key );
+            const int osgKey = eqKeyToOsg( event->data.keyPress.key );
+            if( _eventQueue.valid( ))
+                _eventQueue->keyRelease( osgKey, time );
+            break;
+        }
+    }
+
+    if( !ret )
+        ret = eq::Config::handleEvent( event );
+
+    return ret;
+}
+
+#if 0
 bool Config::handleEvent( eq::EventCommand command )
 {
     bool ret = false;
@@ -459,6 +556,7 @@ hitEvent->hit.z( ), lat_rad, lon_rad, height );
 
     return ret;
 }
+#endif
 
 osgViewer::View* Config::takeOrCreateOSGView( const eq::uint128_t& sceneID )
 {
@@ -486,14 +584,16 @@ osgViewer::View* Config::takeOrCreateOSGView( const eq::uint128_t& sceneID )
         osgView->getCamera( )->setComputeNearFarMode(
             osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR );
 
-        osgView->setSceneData( getScene( sceneID ));
+        osgView->setSceneData( getScene( sceneID, osgView ));
         osgView->setDatabasePager( _pager );
 
+#if 0
         osgEarth::Util::SkyNode* sky =
             osgEarth::findTopMostNodeOfType< osgEarth::Util::SkyNode >(
                 osgView->getSceneData( ));
         if( sky )
             sky->attach( osgView );
+#endif
     }
 
     return osgView;
@@ -524,17 +624,19 @@ void Config::createOverlay( osgEarth::Util::Controls::ControlCanvas* cc,
 
     LBASSERT( v->getOverlayID( ) == 1 ); // TODO : multiple overlays
 
-    using namespace osgEarth::Symbology;
-    using namespace osgEarth::Util::Controls;
-
+#if 0
     {
+        using namespace osgEarth::Symbology;
+        using namespace osgEarth::Util::Controls;
+
+        // Logo bottom-left
         VBox* center = new VBox( );
         center->setFrame( new RoundedFrame( ));
         center->getFrame()->setBackColor( 0, 0, 0, 0.5 );
         center->setPadding( 10 );
         center->setMargin( 10 );
-        center->setHorizAlign( Control::ALIGN_LEFT );
         center->setVertAlign( Control::ALIGN_BOTTOM );
+        center->setHorizAlign( Control::ALIGN_LEFT );
 
         osg::ref_ptr< osg::Image > image =
             osgDB::readImageFile("/afs/cmf/users/dkleiner/nrl-dc-logo.png");
@@ -548,7 +650,7 @@ void Config::createOverlay( osgEarth::Util::Controls::ControlCanvas* cc,
 
         cc->addControl( center );
 
-#if 1
+        // Lat/Lon bottom-center
         HBox* bottom = new HBox( );
         bottom->setFrame( new RoundedFrame( ));
         bottom->getFrame( )->setBackColor( 0, 0, 0, 0.5 );
@@ -565,19 +667,43 @@ void Config::createOverlay( osgEarth::Util::Controls::ControlCanvas* cc,
         cc->addControl( bottom );
 
         cc->addUpdateCallback( new ControlUpdateCallback( v, lonlat ));
-#endif
+
+        // Classification top-center
+        HBox* top = new HBox( );
+        top->setFrame( new Frame( ));
+        top->getFrame( )->setBackColor( 0, 0, 0, 0.5 );
+        top->setMargin( 10 );
+        top->setVertAlign( Control::ALIGN_TOP );
+        top->setHorizAlign( Control::ALIGN_CENTER );
+
+        LabelControl* classification = new LabelControl( );
+        classification->setMargin( 0 );
+        classification->setBackColor( 1, 1, 0, 0.5 );
+        classification->setForeColor( 0, 0, 0, 0.75 );
+        classification->setText( "        Unclassified     //     FOUO        " );
+        classification->setEncoding( osgText::String::ENCODING_UTF8 );
+        classification->setFont( osgText::readFontFile(
+            "/afs/cmf/project/dc/sys/share/OpenSceneGraph-Data/fonts/VeraMono.ttf"
+        ));
+        top->addControl( classification );
+
+
+        cc->addControl( top );
     }
+#endif
 }
 
-osg::Group* Config::getScene( const eq::uint128_t& sceneID )
+osg::Group* Config::getScene( const eq::uint128_t& sceneID,
+        osgViewer::View* view )
 {
     LBASSERT( sceneID == 1 ); // TODO : multiple scenes
 
     if( !_scene.valid( ))
     {
         using namespace osgEarth;
-        using namespace osgEarth::Drivers;
+        //using namespace osgEarth::Drivers;
         using namespace osgEarth::Util;
+        //using namespace osgEarth::Annotation;
 
         osg::Group* group = new osg::Group( );
 
@@ -609,25 +735,74 @@ osg::Group* Config::getScene( const eq::uint128_t& sceneID )
 
         if( mapNode && map->getProfile( ) && map->isGeocentric( ))
         {
+#if 0
+            osg::ref_ptr<osgDB::Options> dbOptions =
+                Registry::instance( )->cloneOrCreateOptions( );
+#endif
+
 #if 1
-            osgEarth::Util::SkyNode* sky = new osgEarth::Util::SkyNode( map );
+            //SkyNode* sky = new SkyNode( map );
+            SkyNode* sky = osgEarth::Util::SkyNode::create( mapNode );
 
             sky->addUpdateCallback( new SkyUpdateCallback );
-            sky->setAmbientBrightness( 0.4f );
+            sky->setSunVisible( true );
+            sky->setMoonVisible( true );
+            sky->attach( view );
 
             group->addChild( sky );
 #endif
 
 #if 0
+            OceanNode* ocean = osgEarth::Util::OceanNode::create( mapNode );
+            group->addChild( ocean );
+#endif
+
             const osgEarth::Util::Config& externals =
                 mapNode->externalConfig( );
 
-            osgEarth::Drivers::OceanSurfaceNode* ocean =
-                new osgEarth::Drivers::OceanSurfaceNode( mapNode,
+            const osgEarth::Util::Config& annoConf =
+                externals.child( "annotations" );
+
+#if 0
+            if ( !annoConf.empty() )
+            {
+                osg::Group* annotations = NULL;
+                AnnotationRegistry::instance( )->create(
+                    mapNode, annoConf, dbOptions.get( ), annotations );
+                if( annotations )
+                {
+                    group->addChild( annotations );
+                }
+            }
+
+
+            const osgEarth::Util::Config& declutterConf =
+                externals.child( "decluttering" );
+
+            if ( !declutterConf.empty() )
+            {
+                Decluttering::setOptions( DeclutteringOptions( declutterConf ));
+            }
+#endif
+
+
+#if 0
+            OceanSurfaceNode* ocean =
+                new OceanSurfaceNode( mapNode,
                     externals.child( "ocean" ));
 
             group->addChild( ocean );
 #endif
+        }
+
+        const std::string &kmlFile = _initData.getKMLFileName( );
+        if( endsWith( kmlFile, ".kml" ))
+        {
+            osg::ref_ptr<osgDB::Options> options = new osgDB::Options( );
+            options->setPluginData( "osgEarth::MapNode", mapNode );
+            osg::Node* kml = osgDB::readNodeFile( kmlFile, options.get( ));
+            if ( kml )
+                group->addChild( kml );
         }
 
         _scene = group;
@@ -680,28 +855,30 @@ View* Config::selectCurrentView( const eq::uint128_t& viewID )
     return view;
 }
 
-void Config::handleMouseEvent( const eq::Event& event, View* view,
-        double time )
+//void Config::handleMouseEvent( const eq::Event& event, View* view,
+//        double time )
+void Config::handleMouseEvent( const eq::ConfigEvent* event, View* view,
+          double time )
 {
-    const eq::PixelViewport& pvp = event.context.pvp;
-    const uint32_t x = event.pointer.x;
-    const uint32_t y = event.pointer.y;
+    const eq::PixelViewport& pvp = event->data.context.pvp;
+    const uint32_t x = event->data.pointer.x;
+    const uint32_t y = event->data.pointer.y;
 
     LBASSERT( _eventQueue.valid( ));
 
-    switch( event.type )
+    switch( event->data.type )
     {
         case eq::Event::WINDOW_POINTER_WHEEL:
         {
             osgGA::GUIEventAdapter::ScrollingMotion sm =
                 osgGA::GUIEventAdapter::SCROLL_NONE;
-            if( event.pointer.xAxis > 0 )
+            if( event->data.pointer.xAxis > 0 )
                 sm = osgGA::GUIEventAdapter::SCROLL_UP;
-            else if( event.pointer.xAxis < 0 )
+            else if( event->data.pointer.xAxis < 0 )
                 sm = osgGA::GUIEventAdapter::SCROLL_DOWN;
-            else if( event.pointer.yAxis > 0 )
+            else if( event->data.pointer.yAxis > 0 )
                 sm = osgGA::GUIEventAdapter::SCROLL_RIGHT;
-            else if( event.pointer.yAxis < 0 )
+            else if( event->data.pointer.yAxis < 0 )
                 sm = osgGA::GUIEventAdapter::SCROLL_LEFT;
             _eventQueue->mouseScroll( sm, time );
             break;
@@ -712,7 +889,7 @@ void Config::handleMouseEvent( const eq::Event& event, View* view,
             break;
         case eq::Event::CHANNEL_POINTER_BUTTON_PRESS:
         {
-            const unsigned int b = eqButtonToOsg( event.pointer.button );
+            const unsigned int b = eqButtonToOsg( event->data.pointer.button );
             if( b <= 3 )
             {
                 _eventQueue->setMouseInputRange( 0, 0, pvp.w, pvp.h );
@@ -722,7 +899,7 @@ void Config::handleMouseEvent( const eq::Event& event, View* view,
         }
         case eq::Event::CHANNEL_POINTER_BUTTON_RELEASE:
         {
-            const unsigned int b = eqButtonToOsg( event.pointer.button );
+            const unsigned int b = eqButtonToOsg( event->data.pointer.button );
             if( b <= 3 )
             {
                 _eventQueue->setMouseInputRange( 0, 0, pvp.w, pvp.h );
@@ -738,7 +915,7 @@ void Config::handleMouseEvent( const eq::Event& event, View* view,
     _eventQueue->takeEvents( events );
 
     for( osgGA::EventQueue::Events::iterator itr = events.begin( );
-        itr != events.end( ); ++itr)
+            itr != events.end( ); ++itr)
     {
         osgViewer::View* osgView = view->getOSGView( );
         LBASSERT( osgView );
@@ -767,7 +944,7 @@ void Config::handleMouseEvent( const eq::Event& event, View* view,
 
                 if( map->isGeocentric( ))
                 {
-                    eq::Frustumf frustum = event.context.frustum;
+                    eq::Frustumf frustum = event->data.context.frustum;
                     frustum.adjust_near( near );
                     frustum.far_plane( ) = far;
                     camera->setProjectionMatrixAsFrustum(
@@ -776,13 +953,13 @@ void Config::handleMouseEvent( const eq::Event& event, View* view,
                         frustum.near_plane( ), frustum.far_plane( ));
 
                     const eq::Matrix4d& headTransform =
-                        event.context.headTransform;
+                        event->data.context.headTransform;
                     camera->setViewMatrix( vmmlToOsg( headTransform *
                             headView ));
                 }
                 else
                 {
-                    eq::Frustumf frustum = event.context.ortho;
+                    eq::Frustumf frustum = event->data.context.ortho;
                     frustum.adjust_near( near );
                     frustum.far_plane( ) = far;
                     camera->setProjectionMatrixAsOrtho(
@@ -791,7 +968,7 @@ void Config::handleMouseEvent( const eq::Event& event, View* view,
                         frustum.near_plane( ), frustum.far_plane( ));
 
                     const eq::Matrix4d& orthoTransform =
-                        event.context.orthoTransform;
+                        event->data.context.orthoTransform;
                     camera->setViewMatrix( vmmlToOsg( orthoTransform *
                             headView ));
                 }

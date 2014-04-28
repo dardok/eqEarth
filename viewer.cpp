@@ -135,7 +135,7 @@ void CompositeViewer::frameStart( const uint32_t frameNumber,
 //LBINFO << "<----- Viewer::frameStart(" << frameNumber << ")" << std::endl;
 }
 
-void CompositeViewer::frameDrawFinish(  )
+void CompositeViewer::frameDrawFinish( )
 {
 //LBINFO << "-----> Viewer::frameDrawFinish( )" << std::endl;
 

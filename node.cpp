@@ -168,13 +168,13 @@ LBINFO << "-----> Node::configInit(" << initID << ")" << std::endl;
 
     if( !config->mapInitData( initID ))
     {
-        setError( ERROR_EQEARTH_MAPOBJECT_FAILED );
+        //setError( ERROR_EQEARTH_MAPOBJECT_FAILED );
         goto out;
     }
 
     if( !config->mapObject( &_frameData, initData.getFrameDataID( )))
     {
-        setError( ERROR_EQEARTH_MAPOBJECT_FAILED );
+        //setError( ERROR_EQEARTH_MAPOBJECT_FAILED );
         goto out;
     }
 

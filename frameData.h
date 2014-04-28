@@ -4,7 +4,7 @@
 
 namespace eqEarth
 {
-class FrameData : public eq::fabric::Serializable
+class FrameData : public co::Serializable
 {
 public:
     FrameData( );
@@ -27,9 +27,9 @@ protected:
 
     enum DirtyBits
     {
-        DIRTY_TIME    = eq::fabric::Serializable::DIRTY_CUSTOM << 0,
-        DIRTY_VIEW    = eq::fabric::Serializable::DIRTY_CUSTOM << 1,
-        DIRTY_FLAGS   = eq::fabric::Serializable::DIRTY_CUSTOM << 2
+        DIRTY_TIME    = co::Serializable::DIRTY_CUSTOM << 0,
+        DIRTY_VIEW    = co::Serializable::DIRTY_CUSTOM << 1,
+        DIRTY_FLAGS   = co::Serializable::DIRTY_CUSTOM << 2
     };
 
     virtual ChangeType getChangeType( ) const { return DELTA; }

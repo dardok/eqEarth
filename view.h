@@ -40,7 +40,7 @@ public:
     const osgViewer::View* getOSGView( ) const { return _osgView; }
 
 private:
-    class Proxy : public eq::fabric::Serializable
+    class Proxy : public co::Serializable
     {
     public:
         Proxy( View* view ) : _view( view ) {}
@@ -49,12 +49,12 @@ private:
         /** The changed parts of the view. */
         enum DirtyBits
         {
-            DIRTY_SCENE   = eq::fabric::Serializable::DIRTY_CUSTOM << 0,
-            DIRTY_OVERLAY = eq::fabric::Serializable::DIRTY_CUSTOM << 1,
-            DIRTY_CAMERA  = eq::fabric::Serializable::DIRTY_CUSTOM << 2,
-            DIRTY_NEARFAR = eq::fabric::Serializable::DIRTY_CUSTOM << 3,
-            DIRTY_LATLON  = eq::fabric::Serializable::DIRTY_CUSTOM << 4,
-            DIRTY_POINTER = eq::fabric::Serializable::DIRTY_CUSTOM << 5
+            DIRTY_SCENE   = co::Serializable::DIRTY_CUSTOM << 0,
+            DIRTY_OVERLAY = co::Serializable::DIRTY_CUSTOM << 1,
+            DIRTY_CAMERA  = co::Serializable::DIRTY_CUSTOM << 2,
+            DIRTY_NEARFAR = co::Serializable::DIRTY_CUSTOM << 3,
+            DIRTY_LATLON  = co::Serializable::DIRTY_CUSTOM << 4,
+            DIRTY_POINTER = co::Serializable::DIRTY_CUSTOM << 5
         };
 
         virtual void serialize( co::DataOStream& os,

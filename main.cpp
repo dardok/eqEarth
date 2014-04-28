@@ -8,7 +8,8 @@ int main( const int argc, char** argv )
     int ret = EXIT_FAILURE;
     eqEarth::NodeFactory nodeFactory;
     eqEarth::InitData initData;
-    co::base::RefPtr< eqEarth::EQEarth > client;
+    //co::base::RefPtr< eqEarth::EQEarth > client;
+    lunchbox::RefPtr< eqEarth::EQEarth > client;
 
     eqEarth::initErrors( );
 

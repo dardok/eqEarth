@@ -47,7 +47,7 @@ void FrameData::toggleStatistics( )
 
 void FrameData::serialize( co::DataOStream& os, const uint64_t dirtyBits )
 {
-    eq::fabric::Serializable::serialize( os, dirtyBits );
+    co::Serializable::serialize( os, dirtyBits );
 
     if( dirtyBits & DIRTY_TIME )
         os << _simulationTime << _calendarTime;
@@ -59,7 +59,7 @@ void FrameData::serialize( co::DataOStream& os, const uint64_t dirtyBits )
 
 void FrameData::deserialize( co::DataIStream& is, const uint64_t dirtyBits )
 {
-    eq::fabric::Serializable::deserialize( is, dirtyBits );
+    co::Serializable::deserialize( is, dirtyBits );
 
     if( dirtyBits & DIRTY_TIME )
         is >> _simulationTime >> _calendarTime;

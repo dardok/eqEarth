@@ -31,7 +31,8 @@ public:
     const InitData& getInitData( ) const { return _initData; }
     bool mapInitData( const eq::uint128_t& initDataID );
 
-    virtual bool handleEvent( eq::EventCommand command );
+    //virtual bool handleEvent( eq::EventCommand command );
+    virtual bool handleEvent( const eq::ConfigEvent* event );
 
 public:
     void setThreadHint( bool thread_hint ) { _thread_hint = thread_hint; }
@@ -51,7 +52,7 @@ public:
 #endif
 
 private:
-    osg::Group* getScene( const eq::uint128_t& sceneID );
+    osg::Group* getScene( const eq::uint128_t& sceneID, osgViewer::View* view );
 
     void cleanup( );
 
@@ -75,7 +76,9 @@ protected:
 
 private:
     View* selectCurrentView( const eq::uint128_t& viewID );
-    void handleMouseEvent( const eq::Event& event, View* view,
+    //void handleMouseEvent( const eq::Event& event, View* view,
+            //double time );
+    void handleMouseEvent( const eq::ConfigEvent* event, View* view,
             double time );
 #if 0
     void updateCurrentWorldPointer( const eq::ConfigEvent& event );

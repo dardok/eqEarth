@@ -2,7 +2,7 @@
 
 #include <osg/NodeCallback>
 
-#include <osgEarthUtil/SkyNode>
+#include <osgEarthUtil/Sky>
 
 #include "view.h"
 #include "controls.h"
@@ -27,8 +27,8 @@ void operator( )( osg::Node* node, osg::NodeVisitor* nv )
         if( _lastSec != now.tm_sec )
         {
             static_cast< osgEarth::Util::SkyNode* >( node )->setDateTime(
-                now.tm_year + 1900, now.tm_mon + 1, now.tm_mday,
-                now.tm_hour + ( now.tm_min / 60.0 ) + ( now.tm_sec / 3600.0 ));
+                osgEarth::Util::DateTime( now.tm_year + 1900, now.tm_mon + 1, now.tm_mday,
+                    now.tm_hour + ( now.tm_min / 60.0 ) + ( now.tm_sec / 3600.0 )));
             _lastSec = now.tm_sec;
         }
     }

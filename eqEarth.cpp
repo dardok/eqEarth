@@ -15,7 +15,7 @@ int EQEarth::run( )
 {
     int ret = EXIT_FAILURE;
     eq::ServerPtr server;
-    eq::ConfigParams configParams;
+    eq::fabric::ConfigParams configParams;
     Config* config = NULL;
 
     server = new eq::Server( );
@@ -39,11 +39,13 @@ int EQEarth::run( )
         goto out_release;
     }
 
+#if 0
     if( config->getError( ))
     {
         LBERROR << "Config::init error : " << config->getError( ) << std::endl;
         goto out_exit;
     }
+#endif
 
     while( config->isRunning( ))
     {

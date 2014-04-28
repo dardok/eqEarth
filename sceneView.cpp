@@ -64,8 +64,8 @@ void SceneView::draw( )
     _renderStage->setColorMask( _camera->getColorMask( ));
 
     // bog standard draw.
-    _renderStage->drawPreRenderStages( _renderInfo,previous );
-    _renderStage->draw( _renderInfo,previous );
+    _renderStage->drawPreRenderStages( _renderInfo, previous );
+    _renderStage->draw( _renderInfo, previous );
 
     // re apply the defalt OGL state.
     state->popAllStateSets( );

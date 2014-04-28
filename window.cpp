@@ -82,7 +82,7 @@ void Window::initCapabilities( osg::GraphicsContext* context )
 
 bool Window::configInit( const eq::uint128_t& initID )
 {
-#if 1
+#if 0
     setIAttribute( IATTR_PLANES_ALPHA,   8 ); // enforce visual with alpha
     setIAttribute( IATTR_PLANES_STENCIL, 8 ); // enforce visual with stencil
 #endif
@@ -117,16 +117,20 @@ LBINFO << "-----> Window::configInitGL(" << initID <<
         traits->alpha = dc.alphaBits;
         traits->stencil = dc.stencilBits;
         traits->doubleBuffer = dc.doublebuffered;
+#if 0
         traits->pbuffer =
             ( getIAttribute( IATTR_HINT_DRAWABLE ) == eq::PBUFFER );
+#endif
         std::ostringstream version;
         version << dc.glVersion;
         traits->glContextVersion = version.str( );
 
+#if 0
         Window* sharedWindow =
             static_cast< Window* >( getSharedContextWindow( ));
         if( sharedWindow && ( sharedWindow != this ))
             traits->sharedContext = sharedWindow->getGraphicsContext( );
+#endif
 
         _window = new osgViewer::GraphicsWindowEmbedded( traits );
 

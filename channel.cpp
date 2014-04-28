@@ -61,7 +61,8 @@ LBINFO << "-----> Channel::configInit(" << initID <<
         _camera->setReferenceFrame( osg::Transform::ABSOLUTE_RF );
         _camera->setAllowEventFocus( false );
 
-        if( false/*isDestination( )*/)
+        if( isDestination( ) &&
+                ( std::string::npos == getNode( )->getName( ).find( "strad" )))
         {
 #if 0
             const eq::PixelViewport& pvp = getPixelViewport( );
@@ -170,6 +171,7 @@ void Channel::frameClear( const eq::uint128_t& frameID )
 LBINFO << "-----> Channel<" << getName( ) << ">::frameClear("
     << frameID << ")" << std::endl;
 
+/*
     if( isDestination( ))
     {
         const unsigned int contextID =
@@ -178,7 +180,7 @@ LBINFO << "-----> Channel<" << getName( ) << ">::frameClear("
             osg::GL2Extensions::Get( contextID, true );
         gl2e->glUseProgram( 0 ); // Icky...
     }
-
+*/
     glEnable( GL_SCISSOR_TEST );
 
     eq::Channel::frameClear( frameID );

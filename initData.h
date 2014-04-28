@@ -18,6 +18,9 @@ public:
     void setModelFileName( const std::string& filename );
     std::string getModelFileName( ) const { return _modelFileName; }
 
+    void setKMLFileName( const std::string& filename );
+    std::string getKMLFileName( ) const { return _kmlFileName; }
+
 protected:
     virtual void getInstanceData( co::DataOStream& stream );
     virtual void applyInstanceData( co::DataIStream& stream );
@@ -31,6 +34,6 @@ private:
 
     eq::uint128_t _frameDataID;
     std::string _modelFileName;
-    bool _ortho;
+    std::string _kmlFileName;
 };
 }
