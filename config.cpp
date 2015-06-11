@@ -976,7 +976,13 @@ void Config::handleMouseEvent( const eq::ConfigEvent* event, View* view,
                 }
             }
 
-            m->handle( itr->get( ), osgView, NULL);
+            osgGA::GUIEventAdapter& ea( *( (*itr)->asGUIEventAdapter() ) );
+            {
+                    // Code stolen from GUIEventHandler::handleWithCheckAgainstIgnoreHandledEventsMask,
+                    // which was deprecated approximately OSG v3.3.1.
+                    bool handled = m->handle( ea, *osgView );
+                    if (handled) ea.setHandled( true );
+	    }
 
             ngc->clearCameras( );
 
