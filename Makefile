@@ -21,7 +21,7 @@ LIBS = -losg -losgViewer -losgUtil -lEqualizer -losgEarth -losgEarthUtil -lGL -l
 all: eqEarth
 
 eqEarth: ${OBJS}
-	${CC} ${CFLAGS} -o $@ ${OBJS} ${LIBS}
+	${CXX} ${CFLAGS} -o $@ ${OBJS} ${LIBS}
 
 clean:
 	/bin/rm -f *.o eqEarth
@@ -30,4 +30,4 @@ clean:
 .SUFFIXES: .o .cpp
 
 .cpp.o:
-	${CC} ${CFLAGS} -c $<
+	${CXX} ${CFLAGS} -c $<
