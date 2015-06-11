@@ -3,6 +3,7 @@
 
 static osgEarth::Viewpoint VPs[] =
 {
+#if 0
     osgEarth::Viewpoint( "FtDix", osg::Vec3d( -74.615666944444442, 39.997432777777782, 0 ), 0.0, -90, 1e3 ),
     osgEarth::Viewpoint( "FtOrdMOUT", osg::Vec3d( -121.8091, 36.5824, 0 ), 0.0, -90, 1e3 ),
     osgEarth::Viewpoint( "Pyong Yang, KN", osg::Vec3d( 125.762933582303, 39.0339236242285, 0 ), 0.0, -90, 1e4 ),
@@ -194,4 +195,5 @@ static osgEarth::Viewpoint VPs[] =
     osgEarth::Viewpoint( "Bangalore, IN", osg::Vec3d( 77.594781741464, 12.9735913032004, 0 ), 0.0, -90, 1e4 ),
     osgEarth::Viewpoint( "Bangkok, TH", osg::Vec3d( 100.56035054686, 13.7783496561836, 0 ), 0.0, -90, 1e4 ),
     osgEarth::Viewpoint( "Barcelona, SP", osg::Vec3d( 2.13246973992958, 41.3645146681043, 0 ), 0.0, -90, 1e4 ),
+#endif
 };

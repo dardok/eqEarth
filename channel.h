@@ -44,8 +44,10 @@ protected:
     virtual void frameDraw( const eq::uint128_t& frameID );
     virtual void frameViewStart( const eq::uint128_t& frameID );
     virtual void frameViewFinish( const eq::uint128_t& frameID );
+/*
     virtual void frameAssemble( const eq::uint128_t& frameID );
     virtual void frameReadback( const eq::uint128_t& frameID );
+*/
 
     virtual bool processEvent( const eq::Event& event );
 

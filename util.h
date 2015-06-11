@@ -5,7 +5,9 @@
 #include <osg/Matrix>
 #include <vmmlib/matrix.hpp>
 
-#if EQ_VERSION_GT( 1, 1, 0 )
+#if EQ_VERSION_GE( 1, 8, 0 )
+#include <eq/fabric/eventEnums.h>
+#elif EQ_VERSION_GT( 1, 1, 0 )
 #include <eq/client/event.h>
 #else
 #include <eq/event.h>

@@ -7,7 +7,7 @@ namespace eqEarth
 FrameData::FrameData( )
     : _simulationTime( 0. )
     , _calendarTime( (time_t)0 )
-    , _currentViewID( eq::UUID::ZERO )
+    , _currentViewID( 0 )
     , _statistics( true )
 {
 }

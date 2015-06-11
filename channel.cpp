@@ -16,8 +16,8 @@ namespace eqEarth
 
 Channel::Channel( eq::Window* parent )
     : eq::Channel( parent )
-    , _sceneID( eq::UUID::ZERO )
-    , _overlayID( eq::UUID::ZERO )
+    , _sceneID( 0 )
+    , _overlayID( 0 )
 {
 LBINFO << "=====> Channel::Channel(" << (void *)this << ")" << std::endl;
 }
@@ -48,7 +48,7 @@ LBINFO << "-----> Channel::configInit(" << initID <<
 
     {
         osg::ref_ptr< osg::GraphicsContext > gc =
-            static_cast< const Window* >( getWindow( ))->getGraphicsContext( );
+            static_cast< Window* >( getWindow( ))->getGraphicsContext( );
 
         _camera = new osg::Camera;
         _camera->setColorMask( new osg::ColorMask );
@@ -296,6 +296,7 @@ LBINFO << "<----- Channel<" << getName( ) << ">::frameViewFinish("
     << frameID << ")" << std::endl;
 }
 
+#if 0
 void Channel::frameAssemble( const eq::uint128_t& frameID )
 {
 //LBINFO << "-----> Channel<" << getName( ) << ">::frameAssemble("
@@ -333,6 +334,7 @@ void Channel::frameReadback( const eq::uint128_t& frameID )
 //    << frameID << ")" << std::endl;
 
 }
+#endif
 
 bool Channel::processEvent( const eq::Event& event )
 {
@@ -516,11 +518,11 @@ void Channel::worldPick( const eq::Vector3d& origin,
 void Channel::cleanup( )
 {
     if( _camera.valid( ))
-        connectCameraToScene( eq::UUID::ZERO );
+        connectCameraToScene( eq::uint128_t( ));
     _camera = 0;
 
     if( _camera2d.valid( ))
-        connectCameraToOverlay( eq::UUID::ZERO );
+        connectCameraToOverlay( eq::uint128_t( ));
     _viewer2d = 0;
 }
 
@@ -538,7 +540,7 @@ void Channel::connectCameraToScene( const eq::uint128_t& id )
 
         Window::initCapabilities( _camera->getGraphicsContext( ));
 
-        if( eq::UUID::ZERO != _sceneID )
+        if( eq::uint128_t( ) != _sceneID )
         {
             node->removeCameraFromOSGView( _sceneID, _camera );
 
@@ -548,7 +550,7 @@ void Channel::connectCameraToScene( const eq::uint128_t& id )
 
         _sceneID = id;
 
-        if( eq::UUID::ZERO != _sceneID )
+        if( eq::uint128_t( ) != _sceneID )
         {
             node->addCameraToOSGView( _sceneID, _camera );
 
@@ -567,7 +569,7 @@ void Channel::connectCameraToOverlay( const eq::uint128_t& id )
 
     if( id != _overlayID )
     {
-        if( eq::UUID::ZERO != _overlayID )
+        if( eq::uint128_t( ) != _overlayID )
         {
             _camera2d = 0;
 
@@ -576,7 +578,7 @@ void Channel::connectCameraToOverlay( const eq::uint128_t& id )
 
         _overlayID = id;
 
-        if( eq::UUID::ZERO != _overlayID )
+        if( eq::uint128_t( ) != _overlayID )
         {
             const eq::PixelViewport& pvp = getPixelViewport( );
             const eq::Viewport& vp = getViewport( );
@@ -587,7 +589,7 @@ void Channel::connectCameraToOverlay( const eq::uint128_t& id )
             camera->setViewport( 0, 0, pvp.w / vp.w, pvp.h / vp.h );
 
             _camera2d =
-                osgEarth::Util::Controls::ControlCanvas::get( _viewer2d, true );
+                osgEarth::Util::Controls::ControlCanvas::get( _viewer2d );
             _camera2d->setColorMask( new osg::ColorMask );
 
             static_cast< Config* >( getConfig( ))->createOverlay( _camera2d,
@@ -598,8 +600,7 @@ void Channel::connectCameraToOverlay( const eq::uint128_t& id )
 
 void Channel::__applyBuffer( osg::Camera* camera )
 {
-    if(( getFrameBufferObject( ) == 0 ) &&
-        ( getWindow( )->getSystemWindow( )->getFrameBufferObject( ) == 0 ))
+    if( getWindow( )->getSystemWindow( )->getFrameBufferObject( ) == 0 )
     {
         camera->setReadBuffer( getReadBuffer( ));
         camera->setDrawBuffer( getDrawBuffer( ));

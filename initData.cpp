@@ -5,7 +5,7 @@ namespace eqEarth
 // ----------------------------------------------------------------------------
 
 InitData::InitData( )
-    : _frameDataID( eq::UUID::ZERO )
+    : _frameDataID( 0 )
     , _modelFileName( DEFAULT_MODEL )
     , _kmlFileName( "" )
 {
@@ -13,7 +13,7 @@ InitData::InitData( )
 
 InitData::~InitData( )
 {
-    setFrameDataID( eq::UUID::ZERO );
+    setFrameDataID( eq::uint128_t( ));
 }
 
 void InitData::setFrameDataID( const eq::uint128_t& id )

@@ -105,9 +105,11 @@ virtual eq::VisitorResult visit( eq::View* view )
         if( map )
         {
             EarthManipulator* em = new EarthManipulator;
+#if 0
             if( !map->isGeocentric( ))
-                em->getSettings()->setCameraProjection(
+                em->setCameraProjection(
                     EarthManipulator::PROJ_ORTHOGRAPHIC );
+#endif
             em->setNode( map->getTerrainEngine( ));
             m = em;
         }
@@ -194,8 +196,8 @@ virtual eq::VisitorResult visit( eq::View* view )
         dynamic_cast< const osgEarth::Util::EarthManipulator* >( m );
     if( em.valid( ))
     {
-        const osgEarth::Util::Viewpoint& vp = em->getViewpoint( );
-        v->setLatLon( vp.y( ), vp.x( ));
+        const osgEarth::optional<osgEarth::GeoPoint> vp = em->getViewpoint( ).focalPoint( );
+        v->setLatLon( vp.get( ).y( ), vp.get( ).x( ));
     }
 
     return eq::TRAVERSE_CONTINUE;
@@ -824,7 +826,7 @@ void Config::cleanup( )
     deregisterObject( &_initData );
     deregisterObject( &_frameData );
 
-    _initData.setFrameDataID( eq::UUID::ZERO );
+    _initData.setFrameDataID( eq::uint128_t( ));
 
     _eventQueue = 0;
     _viewer = 0;
@@ -974,8 +976,7 @@ void Config::handleMouseEvent( const eq::ConfigEvent* event, View* view,
                 }
             }
 
-            m->handleWithCheckAgainstIgnoreHandledEventsMask(
-                *itr->get( ), *osgView);
+            m->handle( itr->get( ), osgView, NULL);
 
             ngc->clearCameras( );
 
