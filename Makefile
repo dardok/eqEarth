@@ -5,7 +5,7 @@ CC = g++
 
 CC = gcc
 CXX = g++
-OPT = -O -DNDEBUG
+OPT = -std=c++11 -O -DNDEBUG
 #OPT = -g -Wall
 
 D =
