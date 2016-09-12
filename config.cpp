@@ -947,12 +947,12 @@ void Config::handleMouseEvent( const eq::ConfigEvent* event, View* view,
                 if( map->isGeocentric( ))
                 {
                     eq::Frustumf frustum = event->data.context.frustum;
-                    frustum.adjust_near( near );
-                    frustum.far_plane( ) = far;
+                    frustum.adjustNearPlane( near );
+                    frustum.farPlane( ) = far;
                     camera->setProjectionMatrixAsFrustum(
                         frustum.left( ), frustum.right( ),
                         frustum.bottom( ), frustum.top( ),
-                        frustum.near_plane( ), frustum.far_plane( ));
+                        frustum.nearPlane( ), frustum.farPlane( ));
 
                     const eq::Matrix4d& headTransform =
                         event->data.context.headTransform;
@@ -962,12 +962,12 @@ void Config::handleMouseEvent( const eq::ConfigEvent* event, View* view,
                 else
                 {
                     eq::Frustumf frustum = event->data.context.ortho;
-                    frustum.adjust_near( near );
-                    frustum.far_plane( ) = far;
+                    frustum.adjustNearPlane( near );
+                    frustum.farPlane( ) = far;
                     camera->setProjectionMatrixAsOrtho(
                         frustum.left( ), frustum.right( ),
                         frustum.bottom( ), frustum.top( ),
-                        frustum.near_plane( ), frustum.far_plane( ));
+                        frustum.nearPlane( ), frustum.farPlane( ));
 
                     const eq::Matrix4d& orthoTransform =
                         event->data.context.orthoTransform;
