@@ -424,7 +424,7 @@ void Channel::updateView( )
                     getFrameData( ).getViewMatrix( );
 
             const eq::Frustumf& frustum = getPerspective( );
-            const eq::Matrix4d projectionMatrix = frustum.computeMatrix( );
+            const eq::Matrix4d projectionMatrix = frustum.compute_matrix( );
 
             double x, y, z;
             LBCHECK( gluProject( origin.x( ), origin.y( ), origin.z( ),
@@ -633,10 +633,10 @@ void Channel::__applyFrustum( osg::Camera* camera ) const
     eq::Frustumf frustum = getFrustum( );
     const eq::Vector2f jitter = getJitter( );
 
-    frustum.jitter( jitter );
+    frustum.apply_jitter( jitter );
     const eq::Matrix4f projection = useOrtho( ) ?
-        frustum.computeOrthoMatrix( ):
-        frustum.computeMatrix( );
+        frustum.compute_ortho_matrix( ):
+        frustum.compute_matrix( );
     camera->setProjectionMatrix( vmmlToOsg( projection ));
 #endif
 }
@@ -646,11 +646,11 @@ void Channel::__applyPerspective( osg::Camera* camera ) const
     eq::Frustumf frustum = getPerspective( );
     const eq::Vector2f jitter = getJitter( );
 
-    frustum.jitter( jitter );
+    frustum.apply_jitter( jitter );
     camera->setProjectionMatrixAsFrustum(
         frustum.left( ), frustum.right( ),
         frustum.bottom( ), frustum.top( ),
-        frustum.nearPlane( ), frustum.farPlane( ));
+        frustum.near_plane( ), frustum.far_plane( ));
 }
 
 void Channel::__applyOrtho( osg::Camera* camera ) const
@@ -658,11 +658,11 @@ void Channel::__applyOrtho( osg::Camera* camera ) const
     eq::Frustumf ortho = getOrtho( );
     const eq::Vector2f jitter = getJitter( );
 
-    ortho.jitter( jitter );
+    ortho.apply_jitter( jitter );
     camera->setProjectionMatrixAsOrtho(
         ortho.left( ), ortho.right( ),
         ortho.bottom( ), ortho.top( ),
-        ortho.nearPlane( ), ortho.farPlane( ));
+        ortho.near_plane( ), ortho.far_plane( ));
 }
 
 void Channel::__applyHeadTransform( osg::Camera* camera ) const
@@ -702,6 +702,6 @@ void Channel::__applyScreenFrustum( osg::Camera* camera ) const
     camera->setProjectionMatrixAsOrtho(
         screen.left( ), screen.right( ),
         screen.bottom( ), screen.top( ),
-        screen.nearPlane( ), screen.farPlane( ));
+        screen.near_plane( ), screen.far_plane( ));
 }
 }
