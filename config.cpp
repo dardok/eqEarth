@@ -942,19 +942,19 @@ void Config::handleMouseEvent( const eq::ConfigEvent* event, View* view,
             {
                 double near, far;
                 view->getNearFar( near, far );
-                const eq::Matrix4d& headView = view->getViewMatrix( );
+                const eq::Matrix4f& headView = view->getViewMatrix( );
 
                 if( map->isGeocentric( ))
                 {
                     eq::Frustumf frustum = event->data.context.frustum;
-                    frustum.adjust_near( near );
-                    frustum.far_plane( ) = far;
+                    frustum.adjustNearPlane( near );
+                    frustum.farPlane( ) = far;
                     camera->setProjectionMatrixAsFrustum(
                         frustum.left( ), frustum.right( ),
                         frustum.bottom( ), frustum.top( ),
-                        frustum.near_plane( ), frustum.far_plane( ));
+                        frustum.nearPlane( ), frustum.farPlane( ));
 
-                    const eq::Matrix4d& headTransform =
+                    const eq::Matrix4f& headTransform =
                         event->data.context.headTransform;
                     camera->setViewMatrix( vmmlToOsg( headTransform *
                             headView ));
@@ -962,14 +962,14 @@ void Config::handleMouseEvent( const eq::ConfigEvent* event, View* view,
                 else
                 {
                     eq::Frustumf frustum = event->data.context.ortho;
-                    frustum.adjust_near( near );
-                    frustum.far_plane( ) = far;
+                    frustum.adjustNearPlane( near );
+                    frustum.farPlane( ) = far;
                     camera->setProjectionMatrixAsOrtho(
                         frustum.left( ), frustum.right( ),
                         frustum.bottom( ), frustum.top( ),
-                        frustum.near_plane( ), frustum.far_plane( ));
+                        frustum.nearPlane( ), frustum.farPlane( ));
 
-                    const eq::Matrix4d& orthoTransform =
+                    const eq::Matrix4f& orthoTransform =
                         event->data.context.orthoTransform;
                     camera->setViewMatrix( vmmlToOsg( orthoTransform *
                             headView ));

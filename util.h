@@ -24,7 +24,7 @@
  * @param matrix a vmml matrix.
  * @return the converted osg matrix.
  */
-inline osg::Matrixd vmmlToOsg( const eq::Matrix4d& matrix )
+inline osg::Matrixd vmmlToOsg( const eq::Matrix4f& matrix )
 {
     return osg::Matrix( matrix( 0, 0 ), matrix( 1, 0 ),
                         matrix( 2, 0 ), matrix( 3, 0 ),
@@ -36,10 +36,10 @@ inline osg::Matrixd vmmlToOsg( const eq::Matrix4d& matrix )
                         matrix( 2, 3 ), matrix( 3, 3 ));
 }
 
-inline eq::Matrix4d osgToVmml( const osg::Matrixd& matrix )
+inline eq::Matrix4f osgToVmml( const osg::Matrixd& matrix )
 {
-#if 0
-    eq::Matrix4d M;
+#if 1
+    eq::Matrix4f M;
 
     M( 0,0 ) = matrix( 0,0 );
     M( 0,1 ) = matrix( 1,0 );
@@ -69,14 +69,14 @@ inline eq::Matrix4d osgToVmml( const osg::Matrixd& matrix )
 #endif
 }
 
-inline osg::Vec3d vmmlToOsg( const eq::Vector3d& vector )
+inline osg::Vec3d vmmlToOsg( const eq::Vector3f& vector )
 {
     return osg::Vec3d( vector.x( ), vector.y( ), vector.z( ));
 }
 
-inline eq::Vector3d osgToVmml( const osg::Vec3d& vector )
+inline eq::Vector3f osgToVmml( const osg::Vec3d& vector )
 {
-    return eq::Vector3d( vector.x( ), vector.y( ), vector.z( ));
+    return eq::Vector3f( vector.x( ), vector.y( ), vector.z( ));
 }
 
 inline unsigned int eqButtonToOsg( uint32_t button )

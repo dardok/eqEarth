@@ -633,10 +633,10 @@ void Channel::__applyFrustum( osg::Camera* camera ) const
     eq::Frustumf frustum = getFrustum( );
     const eq::Vector2f jitter = getJitter( );
 
-    frustum.apply_jitter( jitter );
+    frustum.jitter( jitter );
     const eq::Matrix4f projection = useOrtho( ) ?
-        frustum.compute_ortho_matrix( ):
-        frustum.compute_matrix( );
+        frustum.computeOrthoMatrix( ):
+        frustum.computePerspectiveMatrix( );
     camera->setProjectionMatrix( vmmlToOsg( projection ));
 #endif
 }
@@ -646,11 +646,11 @@ void Channel::__applyPerspective( osg::Camera* camera ) const
     eq::Frustumf frustum = getPerspective( );
     const eq::Vector2f jitter = getJitter( );
 
-    frustum.apply_jitter( jitter );
+    frustum.jitter( jitter );
     camera->setProjectionMatrixAsFrustum(
         frustum.left( ), frustum.right( ),
         frustum.bottom( ), frustum.top( ),
-        frustum.near_plane( ), frustum.far_plane( ));
+        frustum.nearPlane( ), frustum.farPlane( ));
 }
 
 void Channel::__applyOrtho( osg::Camera* camera ) const
@@ -658,11 +658,11 @@ void Channel::__applyOrtho( osg::Camera* camera ) const
     eq::Frustumf ortho = getOrtho( );
     const eq::Vector2f jitter = getJitter( );
 
-    ortho.apply_jitter( jitter );
+    ortho.jitter( jitter );
     camera->setProjectionMatrixAsOrtho(
         ortho.left( ), ortho.right( ),
         ortho.bottom( ), ortho.top( ),
-        ortho.near_plane( ), ortho.far_plane( ));
+        ortho.nearPlane( ), ortho.farPlane( ));
 }
 
 void Channel::__applyHeadTransform( osg::Camera* camera ) const
@@ -702,6 +702,6 @@ void Channel::__applyScreenFrustum( osg::Camera* camera ) const
     camera->setProjectionMatrixAsOrtho(
         screen.left( ), screen.right( ),
         screen.bottom( ), screen.top( ),
-        screen.near_plane( ), screen.far_plane( ));
+        screen.nearPlane( ), screen.farPlane( ));
 }
 }
