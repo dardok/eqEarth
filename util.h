@@ -69,14 +69,14 @@ inline eq::Matrix4f osgToVmml( const osg::Matrix& matrix )
 #endif
 }
 
-inline osg::Vec3d vmmlToOsg( const eq::Vector3d& vector )
+inline osg::Vec3d vmmlToOsg( const eq::Vector3f& vector )
 {
     return osg::Vec3d( vector.x( ), vector.y( ), vector.z( ));
 }
 
-inline eq::Vector3d osgToVmml( const osg::Vec3d& vector )
+inline eq::Vector3f osgToVmml( const osg::Vec3d& vector )
 {
-    return eq::Vector3d( vector.x( ), vector.y( ), vector.z( ));
+    return eq::Vector3f( vector.x( ), vector.y( ), vector.z( ));
 }
 
 inline unsigned int eqButtonToOsg( uint32_t button )
