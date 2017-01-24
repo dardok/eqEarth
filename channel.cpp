@@ -1,7 +1,9 @@
 #include "channel.h"
 
 #include "config.h"
+#if 0
 #include "configEvent.h"
+#endif
 #include "node.h"
 #include "window.h"
 #include "view.h"
@@ -49,8 +51,13 @@ LBINFO << "-----> Channel::configInit(" << initID <<
     {
         osg::ref_ptr< osg::GraphicsContext > gc =
             static_cast< Window* >( getWindow( ))->getGraphicsContext( );
+/*
+        osg::StateSet *ss;
+*/
 
         _camera = new osg::Camera;
+//        _camera->setClearColor( osg::Vec4( 1.0f, 1.0f, 1.0f, 0.5f ));
+        _camera->setClearColor( osg::Vec4( 0.0f, 0.0f, 0.0f, 1.0f ));
         _camera->setColorMask( new osg::ColorMask );
         _camera->setViewport( new osg::Viewport );
         _camera->setGraphicsContext( gc );
@@ -60,6 +67,11 @@ LBINFO << "-----> Channel::configInit(" << initID <<
 #endif
         _camera->setReferenceFrame( osg::Transform::ABSOLUTE_RF );
         _camera->setAllowEventFocus( false );
+
+/*
+        ss = _camera->getOrCreateStateSet( );
+        ss->setMode( GL_LIGHTING, osg::StateAttribute::ON );
+*/
 
         if( isDestination( ) &&
                 ( std::string::npos == getNode( )->getName( ).find( "strad" )))
@@ -210,7 +222,11 @@ LBINFO << "-----> Channel<" << getName( ) << ">::frameDraw("
     near += r * range.start;
     far = near + ( r * range.end );
 */
+#if 1
+    setNearFar( near, 100000000 ); // TODO
+#else
     setNearFar( near, far );
+#endif
 #endif
 
     __applyBuffer( _camera );
@@ -290,6 +306,9 @@ LBINFO << "-----> Channel<" << getName( ) << ">::frameViewFinish("
     if( frameData.useStatistics( ))
         drawStatistics( );
 
+    static_cast< Config* >( getConfig( ))->setZMode( frameData.useZMode( ));
+    static_cast< Config* >( getConfig( ))->setZValue( frameData.getZValue( ));
+
     eq::Channel::frameViewFinish( frameID );
 
 LBINFO << "<----- Channel<" << getName( ) << ">::frameViewFinish("
@@ -336,7 +355,7 @@ void Channel::frameReadback( const eq::uint128_t& frameID )
 }
 #endif
 
-bool Channel::processEvent( const eq::Event& event )
+bool Channel::processEvent( eq::EventType type, eq::PointerEvent& event )
 {
     if( _viewer2d.valid( ))
     {
@@ -350,53 +369,75 @@ bool Channel::processEvent( const eq::Event& event )
 
         const eq::PixelViewport& pvp = event.context.pvp;
         const eq::Viewport& vp = event.context.vp;
-        const uint32_t x = event.pointer.x + pvp.x + ( vp.x * ( pvp.w / vp.w ));
+        const uint32_t x = event.x + pvp.x + ( vp.x * ( pvp.w / vp.w ));
         const uint32_t y =
-            pvp.h - event.pointer.y + pvp.y + ( vp.y * ( pvp.h / vp.h ));
+            pvp.h - event.y + pvp.y + ( vp.y * ( pvp.h / vp.h ));
 
-        switch( event.type )
+        switch( type )
         {
-            case eq::Event::WINDOW_POINTER_WHEEL:
+            case eq::EVENT_WINDOW_POINTER_WHEEL:
             {
                 osgGA::GUIEventAdapter::ScrollingMotion sm =
                     osgGA::GUIEventAdapter::SCROLL_NONE;
-                if( event.pointer.xAxis > 0 )
+                if( event.xAxis > 0 )
                     sm = osgGA::GUIEventAdapter::SCROLL_UP;
-                else if( event.pointer.xAxis < 0 )
+                else if( event.xAxis < 0 )
                     sm = osgGA::GUIEventAdapter::SCROLL_DOWN;
-                else if( event.pointer.yAxis > 0 )
+                else if( event.yAxis > 0 )
                     sm = osgGA::GUIEventAdapter::SCROLL_RIGHT;
-                else if( event.pointer.yAxis < 0 )
+                else if( event.yAxis < 0 )
                     sm = osgGA::GUIEventAdapter::SCROLL_LEFT;
                 eventQueue->mouseScroll( sm, time );
                 break;
             }
-            case eq::Event::CHANNEL_POINTER_MOTION:
+            case eq::EVENT_CHANNEL_POINTER_MOTION:
                 eventQueue->mouseMotion( x, y, time );
                 break;
-            case eq::Event::CHANNEL_POINTER_BUTTON_PRESS:
+            case eq::EVENT_CHANNEL_POINTER_BUTTON_PRESS:
             {
-                const unsigned int b = eqButtonToOsg( event.pointer.button );
+                const unsigned int b = eqButtonToOsg( event.button );
                 if( b <= 3 )
                     eventQueue->mouseButtonPress( x, y, b, time );
                 //windowPick( x, y );
                 break;
             }
-            case eq::Event::CHANNEL_POINTER_BUTTON_RELEASE:
+            case eq::EVENT_CHANNEL_POINTER_BUTTON_RELEASE:
             {
-                const unsigned int b = eqButtonToOsg( event.pointer.button );
+                const unsigned int b = eqButtonToOsg( event.button );
                 if( b <= 3 )
                     eventQueue->mouseButtonRelease( x, y, b, time );
                 break;
             }
-            case eq::Event::KEY_PRESS:
+            default:
+                break;
+        }
+    }
+
+    return eq::Channel::processEvent( type, event );
+}
+
+bool Channel::processEvent( eq::EventType type, eq::KeyEvent& event )
+{
+    if( _viewer2d.valid( ))
+    {
+        osg::ref_ptr< osgGA::EventQueue > eventQueue =
+            _viewer2d->getEventQueue( );
+
+        LBASSERT( isDestination( ));
+
+        const double time =
+            static_cast< double >( getConfig( )->getTime( )) / 1000.;
+
+        switch( type )
+        {
+            case eq::EVENT_KEY_PRESS:
             {
-                const int osgKey = eqKeyToOsg( event.key.key );
+                const int osgKey = eqKeyToOsg( event.key );
                 eventQueue->keyPress( osgKey, time );
             }
-            case eq::Event::KEY_RELEASE:
+            case eq::EVENT_KEY_RELEASE:
             {
-                const int osgKey = eqKeyToOsg( event.key.key );
+                const int osgKey = eqKeyToOsg( event.key );
                 eventQueue->keyRelease( osgKey, time );
             }
             default:
@@ -404,7 +445,7 @@ bool Channel::processEvent( const eq::Event& event )
         }
     }
 
-    return eq::Channel::processEvent( event );
+    return eq::Channel::processEvent( type, event );
 }
 
 void Channel::updateView( )
@@ -424,7 +465,7 @@ void Channel::updateView( )
                     getFrameData( ).getViewMatrix( );
 
             const eq::Frustumf& frustum = getPerspective( );
-            const eq::Matrix4d projectionMatrix = frustum.compute_matrix( );
+            const eq::Matrix4d projectionMatrix = frustum.computePerspectiveMatrix( );
 
             double x, y, z;
             LBCHECK( gluProject( origin.x( ), origin.y( ), origin.z( ),
@@ -465,12 +506,14 @@ void Channel::windowPick( uint32_t x, uint32_t y ) const
             << ") " << std::endl;
 #endif
 
+#if 0
         ConfigEvent event;
         event.data.originator = getID( );
         event.data.type = ConfigEvent::INTERSECTION;
         event.hit = osgToVmml( hit );
         eq::Config* config = const_cast< eq::Config* >( getConfig( ));
         config->sendEvent( event );
+#endif
     }
 }
 
@@ -506,12 +549,14 @@ void Channel::worldPick( const eq::Vector3d& origin,
             << ") in pvp " << getPixelViewport( ) << std::endl;
 #endif
 
+#if 0
         ConfigEvent event;
         event.data.originator = getID( );
         event.data.type = ConfigEvent::INTERSECTION;
         event.hit = osgToVmml( hit );
         eq::Config* config = const_cast< eq::Config* >( getConfig( ));
         config->sendEvent( event );
+#endif
     }
 }
 
@@ -633,10 +678,10 @@ void Channel::__applyFrustum( osg::Camera* camera ) const
     eq::Frustumf frustum = getFrustum( );
     const eq::Vector2f jitter = getJitter( );
 
-    frustum.apply_jitter( jitter );
+    frustum.jitter( jitter );
     const eq::Matrix4f projection = useOrtho( ) ?
-        frustum.compute_ortho_matrix( ):
-        frustum.compute_matrix( );
+        frustum.computeOrthoMatrix( ):
+        frustum.computePerspectiveMatrix( );
     camera->setProjectionMatrix( vmmlToOsg( projection ));
 #endif
 }
@@ -646,11 +691,11 @@ void Channel::__applyPerspective( osg::Camera* camera ) const
     eq::Frustumf frustum = getPerspective( );
     const eq::Vector2f jitter = getJitter( );
 
-    frustum.apply_jitter( jitter );
+    frustum.jitter( jitter );
     camera->setProjectionMatrixAsFrustum(
         frustum.left( ), frustum.right( ),
         frustum.bottom( ), frustum.top( ),
-        frustum.near_plane( ), frustum.far_plane( ));
+        frustum.nearPlane( ), frustum.farPlane( ));
 }
 
 void Channel::__applyOrtho( osg::Camera* camera ) const
@@ -658,11 +703,11 @@ void Channel::__applyOrtho( osg::Camera* camera ) const
     eq::Frustumf ortho = getOrtho( );
     const eq::Vector2f jitter = getJitter( );
 
-    ortho.apply_jitter( jitter );
+    ortho.jitter( jitter );
     camera->setProjectionMatrixAsOrtho(
         ortho.left( ), ortho.right( ),
         ortho.bottom( ), ortho.top( ),
-        ortho.near_plane( ), ortho.far_plane( ));
+        ortho.nearPlane( ), ortho.farPlane( ));
 }
 
 void Channel::__applyHeadTransform( osg::Camera* camera ) const
@@ -702,6 +747,6 @@ void Channel::__applyScreenFrustum( osg::Camera* camera ) const
     camera->setProjectionMatrixAsOrtho(
         screen.left( ), screen.right( ),
         screen.bottom( ), screen.top( ),
-        screen.near_plane( ), screen.far_plane( ));
+        screen.nearPlane( ), screen.farPlane( ));
 }
 }

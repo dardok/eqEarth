@@ -5,7 +5,9 @@
 #include "vps.h"
 #include "callbacks.h"
 #include "window.h" // for Window::initCapabilities
+#if 0
 #include "configEvent.h"
+#endif
 #include "controls.h"
 
 #include "earthManipulator.h"
@@ -117,7 +119,7 @@ virtual eq::VisitorResult visit( eq::View* view )
         {
             m = new osgGA::TrackballManipulator;
             m->setHomePosition(
-                osg::Vec3d( 0, 0, 10 ),
+                osg::Vec3d( 0, 0, 100 ),
                 osg::Vec3d( 0, 0, 0 ),
                 osg::Vec3d( 0, 1, 0 ), false );
             m->setNode( osgView->getSceneData( ));
@@ -210,6 +212,8 @@ Config::Config( eq::ServerPtr parent )
     : eq::Config( parent )
     , _thread_hint( true )
     , _appRenderTick( 0U )
+    , _zmode( NULL )
+    , _zvalue( NULL )
 {
 LBINFO << "=====> Config::Config(" << (void *)this << ")" << std::endl;
 
@@ -366,44 +370,26 @@ bool Config::mapInitData( const eq::uint128_t& initDataID )
     return mapped;
 }
 
-bool Config::handleEvent( const eq::ConfigEvent* event )
+bool Config::handleEvent( eq::EventType type, const eq::KeyEvent& event )
 {
     bool ret = false;
     const double time = static_cast< double >( getTime( )) / 1000.;
 
-    switch( event->data.type )
+    switch( type )
     {
-        case eq::Event::WINDOW_POINTER_WHEEL:
-        case eq::Event::CHANNEL_POINTER_MOTION:
-        case eq::Event::CHANNEL_POINTER_BUTTON_PRESS:
-        case eq::Event::CHANNEL_POINTER_BUTTON_RELEASE:
+        case eq::EVENT_KEY_PRESS:
         {
-            //const eq::Event& event = command.get< eq::Event >();
-            View* view =
-                selectCurrentView( event->data.context.view.identifier );
-            if( view && _eventQueue.valid( ))
-            {
-                handleMouseEvent( event, view, time );
-                ret = true;
-            }
-            break;
-        }
-        case eq::Event::KEY_PRESS:
-        {
-            //const eq::Event& event = command.get< eq::Event >();
-            //const eq::KeyEvent& keyEvent = event.keyPress;
-            //const int osgKey = eqKeyToOsg( keyEvent.key );
-            const int osgKey = eqKeyToOsg( event->data.keyPress.key );
+            const int osgKey = eqKeyToOsg( event.key );
             if( _eventQueue.valid( ))
                 _eventQueue->keyPress( osgKey, time );
 
-            if( 's' == event->data.keyPress.key )
+            if( 's' == event.key )
             {
                 _frameData.toggleStatistics( );
                 ret = true;
             }
 
-            if( 't' == event->data.keyPress.key )
+            if( 't' == event.key )
             {
                 const eq::uint128_t& currentViewID =
                     _frameData.getCurrentViewID( );
@@ -420,7 +406,26 @@ bool Config::handleEvent( const eq::ConfigEvent* event )
                 ret = true;
             }
 
-            if( '1' == event->data.keyPress.key )
+            if( 'z' == event.key )
+            {
+                _frameData.toggleZMode( );
+                ret = true;
+            }
+
+            if( 'q' == event.key )
+            {
+                _frameData.setZValue( _frameData.getZValue( ) - 10.0f );
+                ret = true;
+            }
+
+            if( 'w' == event.key )
+            {
+                _frameData.setZValue( _frameData.getZValue( ) + 10.0f );
+                ret = true;
+            }
+
+#if 0
+            if( '1' == event.key )
             {
                 eq::Canvas* canvas = find< eq::Canvas >( "clove" );
                 if( canvas )
@@ -430,14 +435,15 @@ bool Config::handleEvent( const eq::ConfigEvent* event )
                 }
                 ret = true;
             }
+#endif
             break;
         }
-        case eq::Event::KEY_RELEASE:
+	case eq::EVENT_KEY_RELEASE:
         {
             //const eq::Event& event = command.get< eq::Event >();
             //const eq::KeyEvent& keyEvent = event.keyPress;
             //const int osgKey = eqKeyToOsg( keyEvent.key );
-            const int osgKey = eqKeyToOsg( event->data.keyPress.key );
+            const int osgKey = eqKeyToOsg( event.key );
             if( _eventQueue.valid( ))
                 _eventQueue->keyRelease( osgKey, time );
             break;
@@ -445,120 +451,40 @@ bool Config::handleEvent( const eq::ConfigEvent* event )
     }
 
     if( !ret )
-        ret = eq::Config::handleEvent( event );
+        ret = eq::Config::handleEvent( type, event );
 
     return ret;
 }
 
-#if 0
-bool Config::handleEvent( eq::EventCommand command )
+bool Config::handleEvent( eq::EventType type, const eq::PointerEvent& event )
 {
     bool ret = false;
     const double time = static_cast< double >( getTime( )) / 1000.;
 
-    switch( command.getEventType( ))
+    switch( type )
     {
-        case eq::Event::WINDOW_POINTER_WHEEL:
-        case eq::Event::CHANNEL_POINTER_MOTION:
-        case eq::Event::CHANNEL_POINTER_BUTTON_PRESS:
-        case eq::Event::CHANNEL_POINTER_BUTTON_RELEASE:
+        case eq::EVENT_WINDOW_POINTER_WHEEL:
+	case eq::EVENT_CHANNEL_POINTER_MOTION:
+	case eq::EVENT_CHANNEL_POINTER_BUTTON_PRESS:
+	case eq::EVENT_CHANNEL_POINTER_BUTTON_RELEASE:
         {
-            const eq::Event& event = command.get< eq::Event >();
+            //const eq::Event& event = command.get< eq::Event >();
             View* view =
                 selectCurrentView( event.context.view.identifier );
             if( view && _eventQueue.valid( ))
             {
-                handleMouseEvent( event, view, time );
+                handleMouseEvent( type, event, view, time );
                 ret = true;
             }
-            break;
-        }
-        case eq::Event::KEY_PRESS:
-        {
-            const eq::Event& event = command.get< eq::Event >();
-            const eq::KeyEvent& keyEvent = event.keyPress;
-            const int osgKey = eqKeyToOsg( keyEvent.key );
-            if( _eventQueue.valid( ))
-                _eventQueue->keyPress( osgKey, time );
-
-            if( 's' == keyEvent.key )
-            {
-                _frameData.toggleStatistics( );
-                ret = true;
-            }
-
-            if( 't' == keyEvent.key )
-            {
-                const eq::uint128_t& currentViewID =
-                    _frameData.getCurrentViewID( );
-                View* view =
-                    static_cast< View* >( find< eq::View >( currentViewID ));
-                if( view )
-                {
-                    const eq::View::Mode mode = view->getMode( );
-                    if( eq::View::MODE_MONO == mode )
-                        view->changeMode( eq::View::MODE_STEREO );
-                    else
-                        view->changeMode( eq::View::MODE_MONO );
-                }
-                ret = true;
-            }
-
-            if( '1' == keyEvent.key )
-            {
-                eq::Canvas* canvas = find< eq::Canvas >( "clove" );
-                if( canvas )
-                {
-                    int64_t index = canvas->getActiveLayoutIndex( );
-                    canvas->useLayout( index ? 0 : 1 );
-                }
-                ret = true;
-            }
-            break;
-        }
-        case eq::Event::KEY_RELEASE:
-        {
-            const eq::Event& event = command.get< eq::Event >();
-            const eq::KeyEvent& keyEvent = event.keyPress;
-            const int osgKey = eqKeyToOsg( keyEvent.key );
-            if( _eventQueue.valid( ))
-                _eventQueue->keyRelease( osgKey, time );
-            break;
-        }
-        case ConfigEvent::INTERSECTION:
-        {
-#if 0
-            const ConfigEvent* hitEvent =
-                static_cast< const ConfigEvent* >( event );
-
-            LBINFO << std::fixed << hitEvent << " from " <<
-                hitEvent->data.originator << std::endl;
-if( _map.valid( ))
-{
-
-        double lat_rad, lon_rad, height;
-        _map->getMap( )->getProfile( )->getSRS( )->getEllipsoid(
-)->convertXYZToLatLongHeight( hitEvent->hit.x( ), hitEvent->hit.y( ),
-hitEvent->hit.z( ), lat_rad, lon_rad, height );
-
-        // query the elevation at the map point:
-        double lat_deg = osg::RadiansToDegrees( lat_rad );
-        double lon_deg = osg::RadiansToDegrees( lon_rad );
-
-        LBWARN << "\tHIT(" << lat_deg << ", " << lon_deg << ")" << std::endl;
-}
-#endif
-            ret = true;
             break;
         }
     }
 
     if( !ret )
-        ret = eq::Config::handleEvent( command );
+        ret = eq::Config::handleEvent( type, event );
 
     return ret;
 }
-#endif
 
 osgViewer::View* Config::takeOrCreateOSGView( const eq::uint128_t& sceneID )
 {
@@ -695,6 +621,18 @@ void Config::createOverlay( osgEarth::Util::Controls::ControlCanvas* cc,
 #endif
 }
 
+void Config::setZMode( bool zmode )
+{
+    if( _zmode )
+        _zmode->set( zmode );
+}
+
+void Config::setZValue( float zvalue )
+{
+    if( _zvalue )
+        _zvalue->set( zvalue );
+}
+
 osg::Group* Config::getScene( const eq::uint128_t& sceneID,
         osgViewer::View* view )
 {
@@ -707,13 +645,16 @@ osg::Group* Config::getScene( const eq::uint128_t& sceneID,
         using namespace osgEarth::Util;
         //using namespace osgEarth::Annotation;
 
+	osg::ref_ptr<osg::Node> loadedModel;
         osg::Group* group = new osg::Group( );
 
         Map* map = NULL;
         MapNode* mapNode = NULL;
 
+	loadedModel = osgDB::readNodeFile( _initData.getModelFileName( ));
+
 #if 1
-        group->addChild( osgDB::readNodeFile( _initData.getModelFileName( )));
+        group->addChild( loadedModel );
         mapNode = osgEarth::MapNode::findMapNode( group );
         if( mapNode )
             map = mapNode->getMap( );
@@ -747,8 +688,8 @@ osg::Group* Config::getScene( const eq::uint128_t& sceneID,
             SkyNode* sky = osgEarth::Util::SkyNode::create( mapNode );
 
             sky->addUpdateCallback( new SkyUpdateCallback );
-            sky->setSunVisible( true );
-            sky->setMoonVisible( true );
+            sky->setSunVisible( false );
+            sky->setMoonVisible( false );
             sky->attach( view );
 
             group->addChild( sky );
@@ -795,7 +736,47 @@ osg::Group* Config::getScene( const eq::uint128_t& sceneID,
 
             group->addChild( ocean );
 #endif
-        }
+        } else {
+          osg::StateSet *ss = dynamic_cast<osg::Geode *>( loadedModel.get( ))->getOrCreateStateSet( );
+	  ss->setMode( GL_LIGHTING, osg::StateAttribute::OFF );
+
+static const char *zshaderVertSource = {
+"uniform bool zmode;                                                         \n"
+"uniform float zvalue;                                                       \n"
+"out float z;                                                                \n"
+"out vec4 color;                                                             \n"
+"void main()                                                                 \n"
+"{                                                                           \n"
+"        gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;             \n"
+"        z = 1.0 / (zvalue / gl_Vertex.z);                                   \n"
+"        color = gl_Color;                                                   \n"
+"}                                                                           \n"
+};
+
+static const char *zshaderFragSource = {
+"uniform bool zmode;                                                         \n"
+"uniform float zvalue;                                                       \n"
+"in float z;                                                                 \n"
+"in vec4 color;                                                              \n"
+"void main()                                                                 \n"
+"{                                                                           \n"
+"        if (zmode) {                                                        \n"
+"          gl_FragColor = vec4 (z, z, z, 1.0);                               \n"
+"        } else {                                                            \n"
+"          gl_FragColor = color;                                             \n"
+"        }                                                                   \n"
+"}                                                                           \n"
+};
+
+          osg::Program* program = new osg::Program;
+          program->setName( "zshader" );
+          program->addShader( new osg::Shader( osg::Shader::VERTEX, zshaderVertSource ));
+          program->addShader( new osg::Shader( osg::Shader::FRAGMENT, zshaderFragSource ));
+	  ss->setAttributeAndModes( program, osg::StateAttribute::ON );
+
+          ss->addUniform( _zmode = new osg::Uniform( "zmode", true ));
+          ss->addUniform( _zvalue = new osg::Uniform( "zvalue", 50.0f ));
+	}
 
         const std::string &kmlFile = _initData.getKMLFileName( );
         if( endsWith( kmlFile, ".kml" ))
@@ -857,41 +838,39 @@ View* Config::selectCurrentView( const eq::uint128_t& viewID )
     return view;
 }
 
-//void Config::handleMouseEvent( const eq::Event& event, View* view,
-//        double time )
-void Config::handleMouseEvent( const eq::ConfigEvent* event, View* view,
+void Config::handleMouseEvent( eq::EventType type, const eq::PointerEvent& event, View* view,
           double time )
 {
-    const eq::PixelViewport& pvp = event->data.context.pvp;
-    const uint32_t x = event->data.pointer.x;
-    const uint32_t y = event->data.pointer.y;
+    const eq::PixelViewport& pvp = event.context.pvp;
+    const uint32_t x = event.x;
+    const uint32_t y = event.y;
 
     LBASSERT( _eventQueue.valid( ));
 
-    switch( event->data.type )
+    switch( type )
     {
-        case eq::Event::WINDOW_POINTER_WHEEL:
+        case eq::EVENT_WINDOW_POINTER_WHEEL:
         {
             osgGA::GUIEventAdapter::ScrollingMotion sm =
                 osgGA::GUIEventAdapter::SCROLL_NONE;
-            if( event->data.pointer.xAxis > 0 )
+            if( event.xAxis > 0 )
                 sm = osgGA::GUIEventAdapter::SCROLL_UP;
-            else if( event->data.pointer.xAxis < 0 )
+            else if( event.xAxis < 0 )
                 sm = osgGA::GUIEventAdapter::SCROLL_DOWN;
-            else if( event->data.pointer.yAxis > 0 )
+            else if( event.yAxis > 0 )
                 sm = osgGA::GUIEventAdapter::SCROLL_RIGHT;
-            else if( event->data.pointer.yAxis < 0 )
+            else if( event.yAxis < 0 )
                 sm = osgGA::GUIEventAdapter::SCROLL_LEFT;
             _eventQueue->mouseScroll( sm, time );
             break;
         }
-        case eq::Event::CHANNEL_POINTER_MOTION:
+	case eq::EVENT_CHANNEL_POINTER_MOTION:
             _eventQueue->setMouseInputRange( 0, 0, pvp.w, pvp.h );
             _eventQueue->mouseMotion( x, y, time );
             break;
-        case eq::Event::CHANNEL_POINTER_BUTTON_PRESS:
+	case eq::EVENT_CHANNEL_POINTER_BUTTON_PRESS:
         {
-            const unsigned int b = eqButtonToOsg( event->data.pointer.button );
+            const unsigned int b = eqButtonToOsg( event.button );
             if( b <= 3 )
             {
                 _eventQueue->setMouseInputRange( 0, 0, pvp.w, pvp.h );
@@ -899,9 +878,9 @@ void Config::handleMouseEvent( const eq::ConfigEvent* event, View* view,
             }
             break;
         }
-        case eq::Event::CHANNEL_POINTER_BUTTON_RELEASE:
+	case eq::EVENT_CHANNEL_POINTER_BUTTON_RELEASE:
         {
-            const unsigned int b = eqButtonToOsg( event->data.pointer.button );
+            const unsigned int b = eqButtonToOsg( event.button );
             if( b <= 3 )
             {
                 _eventQueue->setMouseInputRange( 0, 0, pvp.w, pvp.h );
@@ -942,41 +921,41 @@ void Config::handleMouseEvent( const eq::ConfigEvent* event, View* view,
             {
                 double near, far;
                 view->getNearFar( near, far );
-                const eq::Matrix4d& headView = view->getViewMatrix( );
+                const eq::Matrix4f& headView = view->getViewMatrix( );
 
                 if( map->isGeocentric( ))
                 {
-                    eq::Frustumf frustum = event->data.context.frustum;
-                    frustum.adjust_near( near );
-                    frustum.far_plane( ) = far;
+                    eq::Frustumf frustum = event.context.frustum;
+                    frustum.adjustNearPlane( near );
+                    frustum.farPlane( ) = far;
                     camera->setProjectionMatrixAsFrustum(
                         frustum.left( ), frustum.right( ),
                         frustum.bottom( ), frustum.top( ),
-                        frustum.near_plane( ), frustum.far_plane( ));
+                        frustum.nearPlane( ), frustum.farPlane( ));
 
-                    const eq::Matrix4d& headTransform =
-                        event->data.context.headTransform;
+                    const eq::Matrix4f& headTransform =
+                        event.context.headTransform;
                     camera->setViewMatrix( vmmlToOsg( headTransform *
                             headView ));
                 }
                 else
                 {
-                    eq::Frustumf frustum = event->data.context.ortho;
-                    frustum.adjust_near( near );
-                    frustum.far_plane( ) = far;
+                    eq::Frustumf frustum = event.context.ortho;
+                    frustum.adjustNearPlane( near );
+                    frustum.farPlane( ) = far;
                     camera->setProjectionMatrixAsOrtho(
                         frustum.left( ), frustum.right( ),
                         frustum.bottom( ), frustum.top( ),
-                        frustum.near_plane( ), frustum.far_plane( ));
+                        frustum.nearPlane( ), frustum.farPlane( ));
 
-                    const eq::Matrix4d& orthoTransform =
-                        event->data.context.orthoTransform;
+                    const eq::Matrix4f& orthoTransform =
+                        event.context.orthoTransform;
                     camera->setViewMatrix( vmmlToOsg( orthoTransform *
                             headView ));
                 }
             }
 
-            osgGA::GUIEventAdapter& ea( *( (*itr)->asGUIEventAdapter() ) );
+            osgGA::GUIEventAdapter& ea( *(( *itr )->asGUIEventAdapter( )));
             {
                     // Code stolen from GUIEventHandler::handleWithCheckAgainstIgnoreHandledEventsMask,
                     // which was deprecated approximately OSG v3.3.1.
@@ -1004,12 +983,12 @@ void Config::updateCurrentWorldPointer( const eq::ConfigEvent& event )
 LBWARN << "xy: " << x << ", " << y << " in " << pvp << std::endl;
 #endif
 
-    const eq::Matrix4d viewMatrix =
-        eq::Matrix4d( event.context.headTransform ) *
+    const eq::Matrix4f viewMatrix =
+        eq::Matrix4f( event.context.headTransform ) *
             _frameData.getViewMatrix( );
 
     const eq::Frustumf& frustum = event.context.frustum;
-    const eq::Matrix4d projectionMatrix = frustum.compute_matrix( );
+    const eq::Matrix4f projectionMatrix = frustum.computePerspectiveMatrix( );
 
     eq::Vector3d p1, p2;
     LBCHECK(

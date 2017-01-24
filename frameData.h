@@ -21,6 +21,12 @@ public:
     void toggleStatistics( );
     bool useStatistics( ) const { return _statistics; }
 
+    void toggleZMode( );
+    bool useZMode( ) const { return _zmode; }
+
+    void setZValue( float zvalue );
+    float getZValue( ) const { return _zvalue; }
+
 protected:
     virtual void serialize( co::DataOStream& os, const uint64_t dirtyBits );
     virtual void deserialize( co::DataIStream& is, const uint64_t dirtyBits );
@@ -29,7 +35,9 @@ protected:
     {
         DIRTY_TIME    = co::Serializable::DIRTY_CUSTOM << 0,
         DIRTY_VIEW    = co::Serializable::DIRTY_CUSTOM << 1,
-        DIRTY_FLAGS   = co::Serializable::DIRTY_CUSTOM << 2
+        DIRTY_FLAGS   = co::Serializable::DIRTY_CUSTOM << 2,
+        DIRTY_ZMODE   = co::Serializable::DIRTY_CUSTOM << 3,
+        DIRTY_ZVALUE  = co::Serializable::DIRTY_CUSTOM << 4
     };
 
     virtual ChangeType getChangeType( ) const { return DELTA; }
@@ -39,5 +47,7 @@ private:
     time_t _calendarTime;
     eq::uint128_t _currentViewID;
     bool _statistics;
+    bool _zmode;
+    float _zvalue;
 };
 }

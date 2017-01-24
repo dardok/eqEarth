@@ -9,6 +9,8 @@ FrameData::FrameData( )
     , _calendarTime( (time_t)0 )
     , _currentViewID( 0 )
     , _statistics( true )
+    , _zmode( false )
+    , _zvalue( 50.0f )
 {
 }
 
@@ -45,6 +47,21 @@ void FrameData::toggleStatistics( )
     setDirty( DIRTY_FLAGS );
 }
 
+void FrameData::toggleZMode( )
+{
+    _zmode = !_zmode;
+    setDirty( DIRTY_ZMODE );
+}
+
+void FrameData::setZValue( float zvalue )
+{
+    if( _zvalue != zvalue )
+    {
+        _zvalue = zvalue;
+        setDirty( DIRTY_ZVALUE );
+    }
+}
+
 void FrameData::serialize( co::DataOStream& os, const uint64_t dirtyBits )
 {
     co::Serializable::serialize( os, dirtyBits );
@@ -55,6 +72,10 @@ void FrameData::serialize( co::DataOStream& os, const uint64_t dirtyBits )
         os << _currentViewID;
     if( dirtyBits & DIRTY_FLAGS )
         os << _statistics;
+    if( dirtyBits & DIRTY_ZMODE )
+        os << _zmode;
+    if( dirtyBits & DIRTY_ZVALUE )
+        os << _zvalue;
 }
 
 void FrameData::deserialize( co::DataIStream& is, const uint64_t dirtyBits )
@@ -67,5 +88,9 @@ void FrameData::deserialize( co::DataIStream& is, const uint64_t dirtyBits )
         is >> _currentViewID;
     if( dirtyBits & DIRTY_FLAGS )
         is >> _statistics;
+    if( dirtyBits & DIRTY_ZMODE )
+        is >> _zmode;
+    if( dirtyBits & DIRTY_ZVALUE )
+        is >> _zvalue;
 }
 }

@@ -24,7 +24,7 @@
  * @param matrix a vmml matrix.
  * @return the converted osg matrix.
  */
-inline osg::Matrixd vmmlToOsg( const eq::Matrix4d& matrix )
+inline osg::Matrix vmmlToOsg( const eq::Matrix4f& matrix )
 {
     return osg::Matrix( matrix( 0, 0 ), matrix( 1, 0 ),
                         matrix( 2, 0 ), matrix( 3, 0 ),
@@ -36,10 +36,10 @@ inline osg::Matrixd vmmlToOsg( const eq::Matrix4d& matrix )
                         matrix( 2, 3 ), matrix( 3, 3 ));
 }
 
-inline eq::Matrix4d osgToVmml( const osg::Matrixd& matrix )
+inline eq::Matrix4f osgToVmml( const osg::Matrix& matrix )
 {
-#if 0
-    eq::Matrix4d M;
+#if 1
+    eq::Matrix4f M;
 
     M( 0,0 ) = matrix( 0,0 );
     M( 0,1 ) = matrix( 1,0 );
@@ -63,7 +63,7 @@ inline eq::Matrix4d osgToVmml( const osg::Matrixd& matrix )
 
     return M;
 #else
-    eq::Matrix4d m;
+    eq::Matrix4f m;
     m.set( matrix.ptr( ), matrix.ptr( ) + 4 * 4, false );
     return m;
 #endif

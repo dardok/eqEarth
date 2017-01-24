@@ -49,7 +49,8 @@ protected:
     virtual void frameReadback( const eq::uint128_t& frameID );
 */
 
-    virtual bool processEvent( const eq::Event& event );
+    virtual bool processEvent( eq::EventType type, eq::PointerEvent& event ) override;
+    virtual bool processEvent( eq::EventType type, eq::KeyEvent& event ) override;
 
     virtual bool useOrtho( ) const { return false; }
 

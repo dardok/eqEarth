@@ -31,8 +31,8 @@ public:
     const InitData& getInitData( ) const { return _initData; }
     bool mapInitData( const eq::uint128_t& initDataID );
 
-    //virtual bool handleEvent( eq::EventCommand command );
-    virtual bool handleEvent( const eq::ConfigEvent* event );
+    bool handleEvent( eq::EventType type, const eq::KeyEvent& event ) override;
+    bool handleEvent( eq::EventType type, const eq::PointerEvent& event ) override;
 
 public:
     void setThreadHint( bool thread_hint ) { _thread_hint = thread_hint; }
@@ -51,6 +51,9 @@ public:
     const CompositeViewer *getViewer( ) const { return _viewer; }
 #endif
 
+    void setZMode( bool zmode );
+    void setZValue( float zvalue );
+
 private:
     osg::Group* getScene( const eq::uint128_t& sceneID, osgViewer::View* view );
 
@@ -61,6 +64,9 @@ protected:
     FrameData _frameData;
 
     osg::ref_ptr< osg::Group > _scene;
+
+    osg::Uniform *_zmode;
+    osg::Uniform *_zvalue;
 
     osg::ref_ptr< osgUtil::IncrementalCompileOperation > _ico;
     osg::ref_ptr< osgDB::DatabasePager > _pager;
@@ -76,9 +82,7 @@ protected:
 
 private:
     View* selectCurrentView( const eq::uint128_t& viewID );
-    //void handleMouseEvent( const eq::Event& event, View* view,
-            //double time );
-    void handleMouseEvent( const eq::ConfigEvent* event, View* view,
+    void handleMouseEvent( eq::EventType type, const eq::PointerEvent& event, View* view,
             double time );
 #if 0
     void updateCurrentWorldPointer( const eq::ConfigEvent& event );

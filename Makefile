@@ -11,7 +11,8 @@ OPT = -std=c++11 -O -DNDEBUG
 D =
 #D = d
 
-OBJS = channel.o config.o configEvent.o error.o frameData.o initData.o main.o node.o eqEarth.o pipe.o view.o window.o renderer.o sceneView.o viewer.o controls.o earthManipulator.o
+#OBJS = channel.o config.o configEvent.o error.o frameData.o initData.o main.o node.o eqEarth.o pipe.o view.o window.o renderer.o sceneView.o viewer.o controls.o earthManipulator.o
+OBJS = channel.o config.o error.o frameData.o initData.o main.o node.o eqEarth.o pipe.o view.o window.o renderer.o sceneView.o viewer.o controls.o earthManipulator.o
 CFLAGS = ${OPT} ${EXTRA_CFLAGS} -I.
 #CFLAGS = -DEQ_IGNORE_GLEW ${OPT} -I/var/tmp/dkleiner/dev/Buildyard/Build/install/include -isystem /afs/cmf/project/dc/sys/include -I/afs/cmf/project/dc/sys/include -I/afs/cmf/project/gis/include ${EXTRA_CFLAGS} -I.
 #LIBS = -lboost_serialization -lboost_system -lboost_date_time -losg${D} -losgViewer${D} -losgUtil${D} -lEqualizer -losgEarth${D} -losgEarthUtil${D} ${EXTRA_LIBS}
