@@ -11,11 +11,11 @@ namespace eqEarth
 Renderer::Renderer( osg::Camera* camera )
     : osgViewer::Renderer( camera )
 {
-    _availableQueue.takeFront( );
-    _availableQueue.takeFront( );
-
     _sceneView[0] = new SceneView;
     _sceneView[1] = new SceneView;
+
+    _sceneView[0]->setFrameStamp(new osg::FrameStamp());
+    _sceneView[1]->setFrameStamp(new osg::FrameStamp());
 
     osg::Camera* masterCamera = _camera->getView( ) ?
         _camera->getView( )->getCamera( ) : camera;
@@ -44,6 +44,19 @@ Renderer::Renderer( osg::Camera* camera )
         (( view && view->getDisplaySettings( )) ?
             view->getDisplaySettings( ) :
                 osg::DisplaySettings::instance( ).get( ));
+
+    _serializeDraw = ds ? ds->getSerializeDrawDispatch() : false;
+
+    unsigned int sceneViewOptions = osgUtil::SceneView::HEADLIGHT;
+    if (view)
+    {
+        switch(view->getLightingMode())
+        {
+            case(osg::View::NO_LIGHT): sceneViewOptions = 0; break;
+            case(osg::View::SKY_LIGHT): sceneViewOptions = osgUtil::SceneView::SKY_LIGHT; break;
+            case(osg::View::HEADLIGHT): sceneViewOptions = osgUtil::SceneView::HEADLIGHT; break;
+        }
+    }
 
     _sceneView[0]->setAutomaticFlush( automaticFlush );
     _sceneView[0]->setGlobalStateSet( global_stateset );
