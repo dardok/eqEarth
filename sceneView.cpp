@@ -15,14 +15,18 @@ void SceneView::draw( )
     osg::State* state = _renderInfo.getState( );
     state->initializeExtensionProcs( );
 
-    osg::Texture::TextureObjectManager* tom =
-        Texture::getTextureObjectManager( state->getContextID( )).get( );
-    tom->newFrame( state->getFrameStamp( ));
+    // we in theory should be able to be able to bypass reset, but we'll call it just incase.
+    //_state->reset();
+    state->setFrameStamp(_frameStamp.get());
 
-    osg::GLBufferObjectManager* bom =
-        GLBufferObjectManager::getGLBufferObjectManager(
-                state->getContextID( )).get( );
-    bom->newFrame( state->getFrameStamp( ));
+    if (_displaySettings.valid())
+    {
+        state->setDisplaySettings(_displaySettings.get());
+    }
+
+    state->initializeExtensionProcs();
+
+    osg::get<ContextData>(state->getContextID())->newFrame(state->getFrameStamp());
 
     if( !_initCalled )
         init( );
@@ -59,9 +63,21 @@ void SceneView::draw( )
 
     _localStateSet->setAttribute( getViewport( ));
 
-    _localStateSet->setAttribute( _camera->getColorMask( ));
-
-    _renderStage->setColorMask( _camera->getColorMask( ));
+    if (_resetColorMaskToAllEnabled)
+    {   
+        // ensure that all color planes are active.
+        osg::ColorMask* cmask = static_cast<osg::ColorMask*>(_localStateSet->getAttribute(osg::StateAttribute::COLORMASK));
+        if (cmask)
+        {   
+            cmask->setMask(true,true,true,true);
+        }
+        else
+        {   
+            cmask = new osg::ColorMask(true,true,true,true);
+            _localStateSet->setAttribute(cmask);
+        }
+        _renderStage->setColorMask(cmask);
+    }
 
     // bog standard draw.
     _renderStage->drawPreRenderStages( _renderInfo, previous );
