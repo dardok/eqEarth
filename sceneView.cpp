@@ -1,5 +1,7 @@
 #include "sceneView.h"
 
+#include <osg/ContextData>
+
 using namespace osg;
 using namespace osgUtil;
 
