@@ -22,8 +22,8 @@ public:
     std::string getKMLFileName( ) const { return _kmlFileName; }
 
 protected:
-    virtual void getInstanceData( co::DataOStream& stream );
-    virtual void applyInstanceData( co::DataIStream& stream );
+    virtual void getInstanceData( co::DataOStream& stream ) override;
+    virtual void applyInstanceData( co::DataIStream& stream ) override;
 
 public:
     bool parseCommandLine( char **argv, int argc );

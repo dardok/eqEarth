@@ -29,8 +29,8 @@ public:
 protected:
     const FrameData& getFrameData( ) const;
 
-    virtual bool configInit( const eq::uint128_t& initID );
-    virtual bool configExit( );
+    virtual bool configInit( const eq::uint128_t& initID ) override;
+    virtual bool configExit( ) override;
 
 #if 0
     virtual void frameStart( const eq::uint128_t& frameID,
@@ -40,10 +40,10 @@ protected:
     virtual void frameDrawFinish( const eq::uint128_t& frameID,
         const uint32_t frameNumber );
 #endif
-    virtual void frameClear( const eq::uint128_t& frameID );
-    virtual void frameDraw( const eq::uint128_t& frameID );
-    virtual void frameViewStart( const eq::uint128_t& frameID );
-    virtual void frameViewFinish( const eq::uint128_t& frameID );
+    virtual void frameClear( const eq::uint128_t& frameID ) override;
+    virtual void frameDraw( const eq::uint128_t& frameID ) override;
+    virtual void frameViewStart( const eq::uint128_t& frameID ) override;
+    virtual void frameViewFinish( const eq::uint128_t& frameID ) override;
 /*
     virtual void frameAssemble( const eq::uint128_t& frameID );
     virtual void frameReadback( const eq::uint128_t& frameID );
@@ -52,7 +52,7 @@ protected:
     virtual bool processEvent( eq::EventType type, eq::PointerEvent& event ) override;
     virtual bool processEvent( eq::EventType type, eq::KeyEvent& event ) override;
 
-    virtual bool useOrtho( ) const { return false; }
+    virtual bool useOrtho( ) const override { return false; }
 
 protected:
     eq::uint128_t _sceneID;

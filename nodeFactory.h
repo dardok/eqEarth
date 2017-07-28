@@ -14,30 +14,30 @@ namespace eqEarth
 class NodeFactory : public eq::NodeFactory
 {
 public:
-virtual eq::Config* createConfig( eq::ServerPtr parent )
+virtual eq::Config* createConfig( eq::ServerPtr parent ) override
 { return new Config( parent ); }
 
-virtual eq::Node* createNode( eq::Config* parent )
+virtual eq::Node* createNode( eq::Config* parent ) override
 { return new Node( parent ); }
 
-virtual eq::Pipe* createPipe( eq::Node* parent )
+virtual eq::Pipe* createPipe( eq::Node* parent ) override
 { return new Pipe( parent ); }
 
-virtual eq::Window* createWindow( eq::Pipe* parent )
+virtual eq::Window* createWindow( eq::Pipe* parent ) override
 { return new Window( parent ); }
 
-virtual eq::Channel* createChannel( eq::Window* parent )
+virtual eq::Channel* createChannel( eq::Window* parent ) override
 { return new Channel( parent ); }
 
-//virtual Observer* createObserver( Config* parent )
+//virtual Observer* createObserver( Config* parent ) override;
 
-//virtual Layout* createLayout( Config* parent )
+//virtual Layout* createLayout( Config* parent ) override;
 
-virtual eq::View* createView( eq::Layout* parent )
+virtual eq::View* createView( eq::Layout* parent ) override
 { return new View( parent ); }
 
-//virtual Canvas* createCanvas( Config* parent )
+//virtual Canvas* createCanvas( Config* parent ) override;
 
-//virtual Segment* createSegment( Canvas* parent )
+//virtual Segment* createSegment( Canvas* parent ) override;
 };
 }

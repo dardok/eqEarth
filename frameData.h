@@ -28,8 +28,8 @@ public:
     float getZValue( ) const { return _zvalue; }
 
 protected:
-    virtual void serialize( co::DataOStream& os, const uint64_t dirtyBits );
-    virtual void deserialize( co::DataIStream& is, const uint64_t dirtyBits );
+    virtual void serialize( co::DataOStream& os, const uint64_t dirtyBits ) override;
+    virtual void deserialize( co::DataIStream& is, const uint64_t dirtyBits ) override;
 
     enum DirtyBits
     {
@@ -40,7 +40,7 @@ protected:
         DIRTY_ZVALUE  = co::Serializable::DIRTY_CUSTOM << 4
     };
 
-    virtual ChangeType getChangeType( ) const { return DELTA; }
+    virtual ChangeType getChangeType( ) const override { return DELTA; }
 
 private:
     double _simulationTime;

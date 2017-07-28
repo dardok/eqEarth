@@ -7,6 +7,6 @@ namespace eqEarth
 class SceneView : public osgUtil::SceneView
 {
 protected:
-    virtual void draw();
+    virtual void draw() override;
 };
 }

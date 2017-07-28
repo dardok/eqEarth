@@ -11,7 +11,7 @@ enum Type
     INTERSECTION = eq::Event::USER
 };
 
-explicit ConfigEvent( )
+ConfigEvent( )
 {
     size = sizeof( ConfigEvent );
 }

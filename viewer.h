@@ -23,7 +23,7 @@ public:
     void frameDrawFinish( );
 
     // AppNode only
-    virtual void renderingTraversals( bool needMakeCurrentInThisThread );
-    virtual void realize( );
+    void renderingTraversals( bool needMakeCurrentInThisThread );
+    virtual void realize( ) override;
 };
 }

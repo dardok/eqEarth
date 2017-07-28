@@ -21,11 +21,11 @@ protected:
     virtual ~Config( );
 
 public:
-    virtual bool init( );
-    virtual bool exit( );
+    bool init( );
+    virtual bool exit( ) override;
 
-    virtual uint32_t startFrame( );
-    virtual uint32_t finishFrame( );
+    uint32_t startFrame( );
+    uint32_t finishFrame( );
 
     void setInitData( const InitData& initData ) { _initData = initData; }
     const InitData& getInitData( ) const { return _initData; }

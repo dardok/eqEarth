@@ -35,15 +35,15 @@ public:
 #endif
 
 protected:
-    virtual bool configInit( const eq::uint128_t& initID );
-    virtual bool configExit( );
+    virtual bool configInit( const eq::uint128_t& initID ) override;
+    virtual bool configExit( ) override;
 
     virtual void frameStart( const eq::uint128_t& frameID,
-        const uint32_t frameNumber );
+        const uint32_t frameNumber ) override;
     virtual void frameFinish( const eq::uint128_t& frameID,
-        const uint32_t frameNumber );
+        const uint32_t frameNumber ) override;
     virtual void frameDrawFinish( const eq::uint128_t& frameID,
-        const uint32_t frameNumber );
+        const uint32_t frameNumber ) override;
 
 private:
     void cleanup( );

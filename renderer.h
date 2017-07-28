@@ -9,6 +9,6 @@ class Renderer : public osgViewer::Renderer
 public:
     explicit Renderer( osg::Camera* camera );
 
-    virtual void operator( )( osg::GraphicsContext* context );
+    virtual void operator( )( osg::GraphicsContext* context ) override;
 };
 }

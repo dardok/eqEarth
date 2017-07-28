@@ -28,16 +28,16 @@ public:
     static void initCapabilities( osg::GraphicsContext* context );
 
 protected:
-    virtual bool configInit( const eq::uint128_t& initID );
-    virtual bool configInitGL( const eq::uint128_t& initID );
-    virtual bool configExitGL( );
+    virtual bool configInit( const eq::uint128_t& initID ) override;
+    virtual bool configInitGL( const eq::uint128_t& initID ) override;
+    virtual bool configExitGL( ) override;
     virtual void frameStart( const eq::uint128_t& frameID,
-        const uint32_t frameNumber );
+        const uint32_t frameNumber ) override;
     virtual void frameFinish( const eq::uint128_t& frameID,
-        const uint32_t frameNumber );
+        const uint32_t frameNumber ) override;
     virtual void frameDrawFinish( const eq::uint128_t& frameID,
-        const uint32_t frameNumber );
-    virtual void swapBuffers( );
+        const uint32_t frameNumber ) override;
+    virtual void swapBuffers( ) override;
 
 private:
     struct ClearChannels;

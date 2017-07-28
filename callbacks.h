@@ -15,7 +15,7 @@ struct SkyUpdateCallback : public osg::NodeCallback
 {
 SkyUpdateCallback( ) : _lastSec( -1 ) { }
 
-void operator( )( osg::Node* node, osg::NodeVisitor* nv )
+void operator( )( osg::Node* node, osg::NodeVisitor* nv ) override
 {
     if( osg::NodeVisitor::UPDATE_VISITOR == nv->getVisitorType( ))
     {
@@ -47,7 +47,7 @@ struct ControlUpdateCallback : public osg::NodeCallback
 ControlUpdateCallback( View* view, LonLatLabelControl* ll )
     : _view( view ), _ll( ll ), _last_lat( 0. ), _last_lon( 0. ) { }
 
-void operator( )( osg::Node* node, osg::NodeVisitor* nv )
+void operator( )( osg::Node* node, osg::NodeVisitor* nv ) override
 {
     lunchbox::ScopedWrite _mutex( _update_lock );
 
