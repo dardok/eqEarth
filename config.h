@@ -12,10 +12,10 @@
 
 namespace eqEarth
 {
-class Config : public eq::Config
+class Config final : public eq::Config
 {
 public:
-    Config( eq::ServerPtr parent );
+    explicit Config( eq::ServerPtr parent );
 
 protected:
     virtual ~Config( );

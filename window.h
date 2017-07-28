@@ -6,10 +6,10 @@
 
 namespace eqEarth
 {
-class Window : public eq::Window
+class Window final : public eq::Window
 {
 public:
-    Window( eq::Pipe* parent );
+    explicit Window( eq::Pipe* parent );
 
 protected:
     virtual ~Window( );

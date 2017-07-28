@@ -6,10 +6,10 @@
 
 namespace eqEarth
 {
-class EQEarth : public eq::Client
+class EQEarth final : public eq::Client
 {
 public:
-    EQEarth( const InitData& initData );
+    explicit EQEarth( const InitData& initData );
 
     int run( );
 

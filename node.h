@@ -11,10 +11,10 @@
 
 namespace eqEarth
 {
-class Node : public eq::Node
+class Node final : public eq::Node
 {
 public:
-    Node( eq::Config* parent );
+    explicit Node( eq::Config* parent );
 
 protected:
     virtual ~Node( );

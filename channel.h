@@ -14,10 +14,10 @@
 
 namespace eqEarth
 {
-class Channel : public eq::Channel
+class Channel final : public eq::Channel
 {
 public:
-    Channel( eq::Window* parent );
+    explicit Channel( eq::Window* parent );
 
 protected:
     virtual ~Channel( );

@@ -6,10 +6,10 @@
 
 namespace eqEarth
 {
-class View : public eq::View
+class View final : public eq::View
 {
 public:
-    View( eq::Layout* parent );
+    explicit View( eq::Layout* parent );
 
 protected:
     virtual ~View( );

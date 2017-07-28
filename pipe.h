@@ -4,10 +4,10 @@
 
 namespace eqEarth
 {
-class Pipe : public eq::Pipe
+class Pipe final : public eq::Pipe
 {
 public:
-    Pipe( eq::Node* parent );
+    explicit Pipe( eq::Node* parent );
 
     static lunchbox::Lock *getPipeLock( ) { return &_pipeLock; };
 
