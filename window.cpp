@@ -1,5 +1,8 @@
+#include "channel.h"
 #include "window.h"
+#include "pipe.h"
 #include "node.h"
+#include "config.h"
 
 #include <osgEarth/Registry>
 
@@ -164,6 +167,8 @@ bool Window::configExitGL( )
 {
 LBINFO << "------ Window::configExitGL( )" << std::endl;
 
+    lunchbox::ScopedWrite _mutex( Pipe::getPipeLock( ));
+
     cleanup( );
 
     return eq::Window::configExitGL( );
@@ -227,13 +232,26 @@ void Window::swapBuffers( )
     eq::Window::swapBuffers( );
 }
 
+struct Window::ClearChannels : public eq::ConfigVisitor
+{
+virtual eq::VisitorResult visit( eq::Channel* channel )
+{
+    static_cast< Channel* >( channel )->clearScene( );
+}
+};
+
 void Window::cleanup( )
 {
     if( _window.valid( ))
     {
+        ClearChannels c;
+	accept( c );
+
+        static_cast< Config* >( getConfig( ))->clearScene( );
+
         static_cast< Node* >( getNode( ))->removeGraphicsContext( _window );
 
-        if( _window->valid( ))
+        if( _window.valid( ))
             _window->close( );
     }
 

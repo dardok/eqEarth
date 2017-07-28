@@ -9,6 +9,8 @@ class Pipe : public eq::Pipe
 public:
     Pipe( eq::Node* parent );
 
+    static lunchbox::Lock *getPipeLock( ) { return &_pipeLock; };
+
 protected:
     virtual ~Pipe( );
 
@@ -25,5 +27,7 @@ protected:
 
 private:
     void cleanup( );
+
+    static lunchbox::Lock _pipeLock;
 };
 }

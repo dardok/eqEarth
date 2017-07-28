@@ -139,6 +139,8 @@ LBINFO << "<----- Channel::configInit(" << initID << ")" << std::endl;
 
 bool Channel::configExit( )
 {
+LBINFO << "------ Channel::configExit( )" << std::endl;
+
     cleanup( );
 
     return eq::Channel::configExit( );
@@ -564,7 +566,7 @@ void Channel::worldPick( const eq::Vector3d& origin,
     }
 }
 
-void Channel::cleanup( )
+void Channel::clearScene( )
 {
     if( _camera.valid( ))
         connectCameraToScene( eq::uint128_t( ));
@@ -573,6 +575,11 @@ void Channel::cleanup( )
     if( _camera2d.valid( ))
         connectCameraToOverlay( eq::uint128_t( ));
     _viewer2d = 0;
+}
+
+void Channel::cleanup( )
+{
+
 }
 
 void Channel::connectCameraToScene( const eq::uint128_t& id )

@@ -6,6 +6,8 @@ namespace eqEarth
 {
 // ----------------------------------------------------------------------------
 
+lunchbox::Lock Pipe::_pipeLock;
+
 Pipe::Pipe( eq::Node* parent )
     : eq::Pipe( parent )
 {
@@ -43,6 +45,10 @@ LBINFO << "<----- Pipe::configInit(" << initID << ")" << std::endl;
 
 bool Pipe::configExit( )
 {
+LBINFO << "------ Pipe::configExit( )" << std::endl;
+
+    lunchbox::ScopedWrite _mutex( Pipe::getPipeLock( ));
+
     cleanup( );
 
     return eq::Pipe::configExit( );

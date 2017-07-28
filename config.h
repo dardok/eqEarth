@@ -57,6 +57,9 @@ public:
 private:
     osg::Group* getScene( const eq::uint128_t& sceneID, osgViewer::View* view );
 
+    friend class Window;
+    void clearScene( ); // Must call with GL context (i.e. Window::configExitGL)
+
     void cleanup( );
 
 protected:

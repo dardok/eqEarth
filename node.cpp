@@ -191,6 +191,8 @@ LBINFO << "<----- Node::configInit(" << initID << ")" << std::endl;
 
 bool Node::configExit( )
 {
+LBINFO << "------ Node::configExit( )" << std::endl;
+
     cleanup( );
 
     return eq::Node::configExit( );

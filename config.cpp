@@ -314,19 +314,16 @@ LBINFO << "-----> Config::exit( )" << std::endl;
     _viewer->shutdown( );
     _pager->cancel( );
 
-    // Clear scene graph before GL shutdown
-    _scene->removeChildren( 0, _scene->getNumChildren( ));
-
     // Clear view references before GL shutdown
     {
         ViewCollector m( this, true );
         accept( m );
     }
 
+    cleanup( );
+
     // Shutdown GL (destroys View, Channel, Window, Pipe, Node - basically everything)
     bool ret = eq::Config::exit( );
-
-    cleanup( );
 
 LBINFO << "<----- Config::exit( ) = " << ret << std::endl;
     return ret;
@@ -851,6 +848,13 @@ static const char *zshaderFragSource = {
     _scene->resizeGLObjectBuffers( ds->getMaxNumberOfGraphicsContexts( ));
 
     return _scene.get( );
+}
+
+void Config::clearScene( )
+{
+    if( _scene.valid( ))
+        _scene->removeChildren( 0, _scene->getNumChildren( ));
+    //_scene->removeChild( osgEarth::findTopMostNodeOfType< osgEarth::Util::SkyNode >( _scene ));
 }
 
 void Config::cleanup( )

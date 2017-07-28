@@ -69,6 +69,9 @@ protected:
         const eq::Vector3d& direction ) const;
 
 private:
+    friend class Window;
+    void clearScene( ); // Must call with GL context (i.e. Window::configExitGL)
+
     void cleanup( );
 
     void connectCameraToScene( const eq::uint128_t& id );

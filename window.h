@@ -40,6 +40,8 @@ protected:
     virtual void swapBuffers( );
 
 private:
+    struct ClearChannels;
+
     void cleanup( );
 
 protected:
