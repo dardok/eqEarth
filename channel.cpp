@@ -566,7 +566,7 @@ void Channel::worldPick( const eq::Vector3d& origin,
     }
 }
 
-void Channel::clearScene( )
+void Channel::clearCameras( )
 {
     if( _camera.valid( ))
         connectCameraToScene( eq::uint128_t( ));

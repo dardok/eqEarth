@@ -70,7 +70,7 @@ protected:
 
 private:
     friend class Window;
-    void clearScene( ); // Must call with GL context (i.e. Window::configExitGL)
+    void clearCameras( ); // Must call with GL context (i.e. Window::configExitGL)
 
     void cleanup( );
 

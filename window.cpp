@@ -236,7 +236,7 @@ struct Window::ClearChannels : public eq::ConfigVisitor
 {
 virtual eq::VisitorResult visit( eq::Channel* channel )
 {
-    static_cast< Channel* >( channel )->clearScene( );
+    static_cast< Channel* >( channel )->clearCameras( );
 }
 };
 
@@ -251,8 +251,7 @@ void Window::cleanup( )
 
         static_cast< Node* >( getNode( ))->removeGraphicsContext( _window );
 
-        if( _window.valid( ))
-            _window->close( );
+        _window->close( );
     }
 
     _window = 0;
