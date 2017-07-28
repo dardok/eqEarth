@@ -68,7 +68,7 @@ void Node::addCameraToOSGView( const eq::uint128_t& id, osg::Camera* camera )
 
     Config* config = static_cast< Config* >( getConfig( ));
 
-//LBINFO << "-----> Node::addCameraToView(" << id << ")" << std::endl;
+LBINFO << "-----> Node::addCameraToView(" << id << ")" << std::endl;
 
     const bool needViewerLock = ( getPipes( ).size( ) > 1 );
     lunchbox::ScopedWrite _mutex( needViewerLock ? &_viewer_lock : 0 );
@@ -117,7 +117,7 @@ void Node::addCameraToOSGView( const eq::uint128_t& id, osg::Camera* camera )
     if( needFrameStart )
         _viewer->frameStart( _frameNumber, getFrameData( ));
 
-//LBINFO << "<----- Node::addCameraToView(" << id << ")" << std::endl;
+LBINFO << "<----- Node::addCameraToView(" << id << ")" << std::endl;
 }
 
 void Node::removeCameraFromOSGView( const eq::uint128_t& id,

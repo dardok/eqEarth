@@ -80,6 +80,8 @@ protected:
 
     uint32_t _appRenderTick;
 
+    bool _shutdown;
+
 private:
     View* selectCurrentView( const eq::uint128_t& viewID );
     void handleMouseEvent( eq::EventType type, const eq::PointerEvent& event, View* view,

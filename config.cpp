@@ -24,6 +24,7 @@
 //#include <GL/glu.h>
 
 #include <osgEarth/MapNode>
+#include <osgEarth/Registry>
 #include <osgEarthUtil/EarthManipulator>
 #include <osgEarthUtil/Sky>
 #include <osgEarthUtil/Ocean>
@@ -79,8 +80,9 @@ static osg::ref_ptr< NullGraphicsContext > ngc =
 
 struct Config::ViewCollector : public eq::ConfigVisitor
 {
-ViewCollector( Config* config )
-    : _config( config )
+ViewCollector( Config* config, bool release = false )
+    : _config( config ),
+      _release( release )
 {
 }
 
@@ -88,6 +90,12 @@ virtual eq::VisitorResult visit( eq::View* view )
 {
     View* v = static_cast< View* >( view );
     osgViewer::View* osgView;
+
+    if( _release ) {
+        v->setOSGView( 0 );
+
+        return eq::TRAVERSE_CONTINUE;
+    }
 
     lunchbox::uint128_t id( 1 );
 
@@ -137,6 +145,9 @@ virtual eq::VisitorResult visit( eq::View* view )
 
 public:
     Config* _config;
+
+private:
+    bool _release;
 };
 
 // ----------------------------------------------------------------------------
@@ -212,6 +223,7 @@ Config::Config( eq::ServerPtr parent )
     : eq::Config( parent )
     , _thread_hint( true )
     , _appRenderTick( 0U )
+    , _shutdown( false )
     , _zmode( NULL )
     , _zvalue( NULL )
 {
@@ -238,13 +250,17 @@ LBINFO << "=====> Config::Config(" << (void *)this << ")" << std::endl;
     ds->setNumOfHttpDatabaseThreadsHint( 2 );
 #endif
 
+#if 0
     _ico = new osgUtil::IncrementalCompileOperation( );
     _ico->setTargetFrameRate( 60.0f );
+#endif
 
     _pager = osgDB::DatabasePager::create( );
     _pager->setUnrefImageDataAfterApplyPolicy( false, false );
     if( _ico.valid( ))
         _pager->setIncrementalCompileOperation( _ico );
+
+    osgDB::Registry::instance()->getObjectWrapperManager()->findWrapper("osg::Image");
 }
 
 Config::~Config( )
@@ -289,10 +305,30 @@ LBINFO << "<----- Config::init( )" << std::endl;
 
 bool Config::exit( )
 {
+LBINFO << "-----> Config::exit( )" << std::endl;
+
+    // Ignore any further events
+    _shutdown = true;
+
+    // Stop database pagers before GL shutdown
+    _viewer->shutdown( );
+    _pager->cancel( );
+
+    // Clear scene graph before GL shutdown
+    _scene->removeChildren( 0, _scene->getNumChildren( ));
+
+    // Clear view references before GL shutdown
+    {
+        ViewCollector m( this, true );
+        accept( m );
+    }
+
+    // Shutdown GL (destroys View, Channel, Window, Pipe, Node - basically everything)
     bool ret = eq::Config::exit( );
 
     cleanup( );
 
+LBINFO << "<----- Config::exit( ) = " << ret << std::endl;
     return ret;
 }
 
@@ -438,7 +474,7 @@ bool Config::handleEvent( eq::EventType type, const eq::KeyEvent& event )
 #endif
             break;
         }
-	case eq::EVENT_KEY_RELEASE:
+        case eq::EVENT_KEY_RELEASE:
         {
             //const eq::Event& event = command.get< eq::Event >();
             //const eq::KeyEvent& keyEvent = event.keyPress;
@@ -461,12 +497,15 @@ bool Config::handleEvent( eq::EventType type, const eq::PointerEvent& event )
     bool ret = false;
     const double time = static_cast< double >( getTime( )) / 1000.;
 
+    if( _shutdown )
+        return true;
+
     switch( type )
     {
         case eq::EVENT_WINDOW_POINTER_WHEEL:
-	case eq::EVENT_CHANNEL_POINTER_MOTION:
-	case eq::EVENT_CHANNEL_POINTER_BUTTON_PRESS:
-	case eq::EVENT_CHANNEL_POINTER_BUTTON_RELEASE:
+        case eq::EVENT_CHANNEL_POINTER_MOTION:
+        case eq::EVENT_CHANNEL_POINTER_BUTTON_PRESS:
+        case eq::EVENT_CHANNEL_POINTER_BUTTON_RELEASE:
         {
             //const eq::Event& event = command.get< eq::Event >();
             View* view =
@@ -645,13 +684,23 @@ osg::Group* Config::getScene( const eq::uint128_t& sceneID,
         using namespace osgEarth::Util;
         //using namespace osgEarth::Annotation;
 
-	osg::ref_ptr<osg::Node> loadedModel;
+        osg::ref_ptr<osg::Node> loadedModel;
         osg::Group* group = new osg::Group( );
 
         Map* map = NULL;
         MapNode* mapNode = NULL;
 
-	loadedModel = osgDB::readNodeFile( _initData.getModelFileName( ));
+        osgEarth::Config c;
+        c.add("elevation_smoothing", false);
+        TerrainOptions to(c);
+
+        MapNodeOptions defMNO;
+        defMNO.setTerrainOptions( to );
+
+        osg::ref_ptr<osgDB::Options> myReadOptions = Registry::instance()->cloneOrCreateOptions();
+        myReadOptions->setPluginStringData("osgEarth.defaultOptions", defMNO.getConfig().toJSON());
+
+        loadedModel = osgDB::readNodeFile( _initData.getModelFileName( ), myReadOptions.get());
 
 #if 1
         group->addChild( loadedModel );
@@ -688,8 +737,8 @@ osg::Group* Config::getScene( const eq::uint128_t& sceneID,
             SkyNode* sky = osgEarth::Util::SkyNode::create( mapNode );
 
             sky->addUpdateCallback( new SkyUpdateCallback );
-            sky->setSunVisible( false );
-            sky->setMoonVisible( false );
+            sky->setSunVisible( true );
+            sky->setMoonVisible( true );
             sky->attach( view );
 
             group->addChild( sky );
@@ -736,9 +785,9 @@ osg::Group* Config::getScene( const eq::uint128_t& sceneID,
 
             group->addChild( ocean );
 #endif
-        } else {
+        } else if (loadedModel) {
           osg::StateSet *ss = dynamic_cast<osg::Geode *>( loadedModel.get( ))->getOrCreateStateSet( );
-	  ss->setMode( GL_LIGHTING, osg::StateAttribute::OFF );
+          ss->setMode( GL_LIGHTING, osg::StateAttribute::OFF );
 
 static const char *zshaderVertSource = {
 "uniform bool zmode;                                                         \n"
@@ -772,11 +821,13 @@ static const char *zshaderFragSource = {
           program->setName( "zshader" );
           program->addShader( new osg::Shader( osg::Shader::VERTEX, zshaderVertSource ));
           program->addShader( new osg::Shader( osg::Shader::FRAGMENT, zshaderFragSource ));
-	  ss->setAttributeAndModes( program, osg::StateAttribute::ON );
+          ss->setAttributeAndModes( program, osg::StateAttribute::ON );
 
           ss->addUniform( _zmode = new osg::Uniform( "zmode", true ));
           ss->addUniform( _zvalue = new osg::Uniform( "zvalue", 50.0f ));
-	}
+        } else {
+          LBWARN << "No model loaded!" << std::endl;
+        }
 
         const std::string &kmlFile = _initData.getKMLFileName( );
         if( endsWith( kmlFile, ".kml" ))
@@ -812,7 +863,6 @@ void Config::cleanup( )
     _eventQueue = 0;
     _viewer = 0;
 
-    // Don't deref _scene until _pager threads are finished
     _pager = 0;
     _ico = 0;
 
@@ -864,11 +914,11 @@ void Config::handleMouseEvent( eq::EventType type, const eq::PointerEvent& event
             _eventQueue->mouseScroll( sm, time );
             break;
         }
-	case eq::EVENT_CHANNEL_POINTER_MOTION:
+        case eq::EVENT_CHANNEL_POINTER_MOTION:
             _eventQueue->setMouseInputRange( 0, 0, pvp.w, pvp.h );
             _eventQueue->mouseMotion( x, y, time );
             break;
-	case eq::EVENT_CHANNEL_POINTER_BUTTON_PRESS:
+        case eq::EVENT_CHANNEL_POINTER_BUTTON_PRESS:
         {
             const unsigned int b = eqButtonToOsg( event.button );
             if( b <= 3 )
@@ -878,7 +928,7 @@ void Config::handleMouseEvent( eq::EventType type, const eq::PointerEvent& event
             }
             break;
         }
-	case eq::EVENT_CHANNEL_POINTER_BUTTON_RELEASE:
+        case eq::EVENT_CHANNEL_POINTER_BUTTON_RELEASE:
         {
             const unsigned int b = eqButtonToOsg( event.button );
             if( b <= 3 )
@@ -961,7 +1011,7 @@ void Config::handleMouseEvent( eq::EventType type, const eq::PointerEvent& event
                     // which was deprecated approximately OSG v3.3.1.
                     bool handled = m->handle( ea, *osgView );
                     if (handled) ea.setHandled( true );
-	    }
+            }
 
             ngc->clearCameras( );
 

@@ -6,7 +6,7 @@ CC = g++
 CC = gcc
 CXX = g++
 OPT = -std=c++11 -O -DNDEBUG
-#OPT = -g -Wall
+#OPT = -std=c++11 -ggdb -O0
 
 D =
 #D = d

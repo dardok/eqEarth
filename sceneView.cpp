@@ -15,7 +15,6 @@ void SceneView::draw( )
         return;
 
     osg::State* state = _renderInfo.getState( );
-    state->initializeExtensionProcs( );
 
     // we in theory should be able to be able to bypass reset, but we'll call it just incase.
     //_state->reset();
@@ -48,8 +47,6 @@ void SceneView::draw( )
     // that need flushing in the next frame.
     _requiresFlush = _automaticFlush;
 
-    state->setInitialViewMatrix( new RefMatrix( getViewMatrix( )));
-
     RenderLeaf* previous = NULL;
 
     if( 0 == ( _camera->getInheritanceMask() & DRAW_BUFFER ))
@@ -65,21 +62,9 @@ void SceneView::draw( )
 
     _localStateSet->setAttribute( getViewport( ));
 
-    if (_resetColorMaskToAllEnabled)
-    {   
-        // ensure that all color planes are active.
-        osg::ColorMask* cmask = static_cast<osg::ColorMask*>(_localStateSet->getAttribute(osg::StateAttribute::COLORMASK));
-        if (cmask)
-        {   
-            cmask->setMask(true,true,true,true);
-        }
-        else
-        {   
-            cmask = new osg::ColorMask(true,true,true,true);
-            _localStateSet->setAttribute(cmask);
-        }
-        _renderStage->setColorMask(cmask);
-    }
+    _localStateSet->setAttribute( _camera->getColorMask( ));
+
+    _renderStage->setColorMask( _camera->getColorMask( ));
 
     // bog standard draw.
     _renderStage->drawPreRenderStages( _renderInfo, previous );

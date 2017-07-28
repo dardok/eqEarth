@@ -1,0 +1,96 @@
+#Equalizer 1.2 ascii
+
+global
+{
+}
+server 
+{
+    config 
+    {
+        name    "local autoconfig"
+        
+        attributes
+        {
+            robustness AUTO
+            eye_base   0.05
+        }
+        appNode
+        {
+            pipe
+            {
+                name     "GPU1 mt mp"
+                port     0
+                device   0
+                viewport [ 0 0 5120 1600 ]
+                
+                window
+                {
+                    name     "eqEarth"
+                    viewport [ 0.125 0.2 0.25 0.5 ]
+                    viewport [ 640 320 1280 800 ]
+                    
+                    attributes
+                    {
+                        planes_stencil     ON
+                    }
+                    
+                    channel
+                    {
+                        name     "GPU1 mt mp channel"
+                        viewport [ 0 0 1 1 ]
+                    }
+                }
+            }
+        }
+        
+        observer
+        {
+            eye_left       [     -0.025          0          0 ]
+            eye_cyclop     [          0          0          0 ]
+            eye_right      [      0.025          0          0 ]
+            focus_distance 1
+            focus_mode     fixed
+            opencv_camera  OFF
+        }
+        layout
+        {
+            name     "Simple"
+            view
+            {
+                observer ""
+                wall
+                {
+                    bottom_left  [   -0.80000   -0.50000   -1.00000 ]
+                    bottom_right [    0.80000   -0.50000   -1.00000 ]
+                    top_left     [   -0.80000    0.50000   -1.00000 ]
+                }
+                
+            }
+        }
+        canvas
+        {
+            layout   "Simple"
+            wall
+            {
+                bottom_left  [   -0.80000   -0.50000   -1.00000 ]
+                bottom_right [    0.80000   -0.50000   -1.00000 ]
+                top_left     [   -0.80000    0.50000   -1.00000 ]
+            }
+            
+            segment
+            {
+                channel  "GPU1 mt mp channel"
+            }
+        }
+        
+        compound
+        {
+            
+            compound
+            {
+                channel  ( canvas 0  segment 0   layout "Simple"  view 0 )
+            }
+        }
+    }
+}
+

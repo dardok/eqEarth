@@ -1,0 +1,1 @@
+env DISPLAY=:0 LB_LOG_LEVEL=ERROR LD_LIBRARY_PATH=/afs/cmf/project/dc/sys/lib:/afs/cmf/project/gis/lib:/afs/ld/software/cuda/lib64 ./eqEarth --eq-config ~/experiemental/equalizer/boxx.e-fillull.eqc --model ~/experimental/osg/readmap.y.map.earth

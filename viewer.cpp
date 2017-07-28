@@ -53,6 +53,27 @@ void CompositeViewer::setGlobalContext( osg::GraphicsContext *context )
     }
 }
 
+void CompositeViewer::shutdown( )
+{
+    Scenes scenes;
+    getScenes( scenes );
+
+    for( Scenes::iterator sitr = scenes.begin( );
+            sitr != scenes.end( ); ++sitr)
+    {
+        osgViewer::Scene* scene = *sitr;
+
+        osg::ref_ptr< osgDB::DatabasePager > dp = scene ?
+            scene->getDatabasePager( ) : 0;
+
+        if( dp.valid( )) {
+            dp->cancel( );
+            scene->setDatabasePager( 0 );
+	}
+    }
+
+}
+
 osgViewer::View* CompositeViewer::createOSGView( const eq::uint128_t& id )
 {
     return new osgView( id );

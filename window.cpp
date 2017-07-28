@@ -162,6 +162,8 @@ LBINFO << "<----- Window::configInitGL(" << initID << ")" << std::endl;
 
 bool Window::configExitGL( )
 {
+LBINFO << "------ Window::configExitGL( )" << std::endl;
+
     cleanup( );
 
     return eq::Window::configExitGL( );

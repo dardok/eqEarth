@@ -12,6 +12,7 @@ class CompositeViewer : public osgViewer::CompositeViewer
 public:
     // AppNode only
     void setGlobalContext( osg::GraphicsContext *context );
+    void shutdown( );
 
     static osgViewer::View* createOSGView( const eq::uint128_t& id );
     osgViewer::View* findOSGViewByID( const eq::uint128_t& id );

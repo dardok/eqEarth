@@ -11,6 +11,10 @@ namespace eqEarth
 Renderer::Renderer( osg::Camera* camera )
     : osgViewer::Renderer( camera )
 {
+    // remove parent osgViewer::Renderer's SceneViews
+    _availableQueue.reset( );
+
+    // replace with our own
     _sceneView[0] = new SceneView;
     _sceneView[1] = new SceneView;
 

@@ -36,12 +36,14 @@ const FrameData& Channel::getFrameData( ) const
 
 bool Channel::configInit( const eq::uint128_t& initID )
 {
+/*
 LBINFO << "-----> Channel::configInit(" << initID <<
     ", " << getPixelViewport( ) <<
     ", " << getViewport( ) <<
     ", " << (void *)getNativeView( ) <<
     ", " << (void *)getView( ) <<
     ", " << isDestination( ) << ")" << std::endl;
+*/
 
     bool init = false;
 
@@ -67,6 +69,7 @@ LBINFO << "-----> Channel::configInit(" << initID <<
 #endif
         _camera->setReferenceFrame( osg::Transform::ABSOLUTE_RF );
         _camera->setAllowEventFocus( false );
+        _camera->setSmallFeatureCullingPixelSize( -1.0f );
 
 /*
         ss = _camera->getOrCreateStateSet( );
@@ -116,6 +119,7 @@ LBINFO << "-----> Channel::configInit(" << initID <<
 #endif
             camera->setReferenceFrame( osg::Transform::ABSOLUTE_RF );
             camera->setAllowEventFocus( false );
+            camera->setSmallFeatureCullingPixelSize( -1.0f );
             camera->setClearMask( GL_DEPTH_BUFFER_BIT );
 
             camera->setThreadSafeRefUnref( true );
