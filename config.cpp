@@ -78,9 +78,9 @@ static osg::ref_ptr< NullGraphicsContext > ngc =
 
 // ----------------------------------------------------------------------------
 
-struct Config::ViewCollector : public eq::ConfigVisitor
+struct Config::ViewInitializer : public eq::ConfigVisitor
 {
-ViewCollector( Config* config, bool release = false )
+ViewInitializer( Config* config, bool release = false )
     : _config( config ),
       _release( release )
 {
@@ -287,10 +287,7 @@ LBINFO << "-----> Config::init( )" << std::endl;
     if( !eq::Config::init( _initData.getID( )))
         goto out;
 
-    {
-        ViewCollector m( this );
-        accept( m );
-    }
+    _accept( ViewInitializer( this ));
 
     init = true;
 
@@ -315,10 +312,7 @@ LBINFO << "-----> Config::exit( )" << std::endl;
     _pager->cancel( );
 
     // Clear view references before GL shutdown
-    {
-        ViewCollector m( this, true );
-        accept( m );
-    }
+    _accept( ViewInitializer( this, true ));
 
     cleanup( );
 
@@ -333,8 +327,7 @@ uint32_t Config::startFrame( )
 {
 LBINFO << "-----> Config<" << getName( ) << ">::startFrame( )" << std::endl;
 
-    ViewUpdater m;
-    accept( m );
+    _accept( ViewUpdater( ));
 
     const double t = static_cast< double >( getTime( )) / 1000.;
     _frameData.setSimulationTime( t );
@@ -550,14 +543,6 @@ osgViewer::View* Config::takeOrCreateOSGView( const eq::uint128_t& sceneID )
 
         osgView->setSceneData( getScene( sceneID, osgView ));
         osgView->setDatabasePager( _pager );
-
-#if 0
-        osgEarth::Util::SkyNode* sky =
-            osgEarth::findTopMostNodeOfType< osgEarth::Util::SkyNode >(
-                osgView->getSceneData( ));
-        if( sky )
-            sky->attach( osgView );
-#endif
     }
 
     return osgView;
@@ -688,49 +673,25 @@ osg::Group* Config::getScene( const eq::uint128_t& sceneID,
         MapNode* mapNode = NULL;
 
         osgEarth::Config c;
-        c.add("elevation_smoothing", false);
-        TerrainOptions to(c);
+        c.add( "elevation_smoothing", false );
+        TerrainOptions to( c );
 
         MapNodeOptions defMNO;
         defMNO.setTerrainOptions( to );
 
-        osg::ref_ptr<osgDB::Options> myReadOptions = Registry::instance()->cloneOrCreateOptions();
-        myReadOptions->setPluginStringData("osgEarth.defaultOptions", defMNO.getConfig().toJSON());
+        osg::ref_ptr<osgDB::Options> dbo = Registry::instance( )->cloneOrCreateOptions( );
+        dbo->setPluginStringData( "osgEarth.defaultOptions", defMNO.getConfig( ).toJSON( ));
 
-        loadedModel = osgDB::readNodeFile( _initData.getModelFileName( ), myReadOptions.get());
+        loadedModel = osgDB::readNodeFile( _initData.getModelFileName( ), dbo.get( ));
 
-#if 1
         group->addChild( loadedModel );
         mapNode = osgEarth::MapNode::findMapNode( group );
         if( mapNode )
             map = mapNode->getMap( );
-#else
-        map = new Map( );
-
-        TMSOptions imagery;
-        imagery.url() =
-            "http://amati-ib0.largedata.net/readymap/tiles/1.0.0/10/";
-        map->addImageLayer( new ImageLayer( "BaseImagery", imagery ));
-
-        TMSOptions elevation;
-        elevation.url() =
-            "http://amati-ib0.largedata.net/readymap/tiles/1.0.0/1/";
-        map->addElevationLayer( new ElevationLayer( "Elevation", elevation ));
-
-        mapNode = new MapNode( map );
-
-        group->addChild( mapNode );
-#endif
 
         if( mapNode && map->getProfile( ) && map->isGeocentric( ))
         {
-#if 0
-            osg::ref_ptr<osgDB::Options> dbOptions =
-                Registry::instance( )->cloneOrCreateOptions( );
-#endif
-
 #if 1
-            //SkyNode* sky = new SkyNode( map );
             SkyNode* sky = osgEarth::Util::SkyNode::create( mapNode );
 
             sky->addUpdateCallback( new SkyUpdateCallback );
@@ -741,16 +702,18 @@ osg::Group* Config::getScene( const eq::uint128_t& sceneID,
             group->addChild( sky );
 #endif
 
+            const osgEarth::Util::Config& externals = mapNode->externalConfig( );
+
+            const osgEarth::Util::Config& annoConf = externals.child( "annotations" );
+
 #if 0
             OceanNode* ocean = osgEarth::Util::OceanNode::create( mapNode );
             group->addChild( ocean );
 #endif
-
-            const osgEarth::Util::Config& externals =
-                mapNode->externalConfig( );
-
-            const osgEarth::Util::Config& annoConf =
-                externals.child( "annotations" );
+#if 0
+            OceanSurfaceNode* ocean = new OceanSurfaceNode( mapNode, externals.child( "ocean" ));
+            group->addChild( ocean );
+#endif
 
 #if 0
             if ( !annoConf.empty() )
@@ -764,25 +727,14 @@ osg::Group* Config::getScene( const eq::uint128_t& sceneID,
                 }
             }
 
-
-            const osgEarth::Util::Config& declutterConf =
-                externals.child( "decluttering" );
-
+            const osgEarth::Util::Config& declutterConf = externals.child( "decluttering" );
             if ( !declutterConf.empty() )
             {
                 Decluttering::setOptions( DeclutteringOptions( declutterConf ));
             }
 #endif
 
-
-#if 0
-            OceanSurfaceNode* ocean =
-                new OceanSurfaceNode( mapNode,
-                    externals.child( "ocean" ));
-
-            group->addChild( ocean );
-#endif
-        } else if (loadedModel) {
+        } else if( loadedModel ) {
           osg::StateSet *ss = dynamic_cast<osg::Geode *>( loadedModel.get( ))->getOrCreateStateSet( );
           ss->setMode( GL_LIGHTING, osg::StateAttribute::OFF );
 
@@ -854,7 +806,6 @@ void Config::clearScene( )
 {
     if( _scene.valid( ))
         _scene->removeChildren( 0, _scene->getNumChildren( ));
-    //_scene->removeChild( osgEarth::findTopMostNodeOfType< osgEarth::Util::SkyNode >( _scene ));
 }
 
 void Config::cleanup( )

@@ -95,6 +95,8 @@ private:
 
     bool appInitGL( bool pbuffer = true );
 
-    struct ViewCollector;
+    struct ViewInitializer;
+
+    template<typename V> eq::VisitorResult _accept( V && visitor ) { return accept( visitor ); }
 };
 }
