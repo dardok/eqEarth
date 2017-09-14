@@ -566,7 +566,7 @@ void Config::createOverlay( osgEarth::Util::Controls::ControlCanvas* cc,
         eq::View* view )
 {
     // osgDB is not thread safe
-    static lunchbox::SpinLock lock;
+    static std::mutex lock;
     lunchbox::ScopedWrite _mutex( lock );
 
     View* v = static_cast< View* >( view );

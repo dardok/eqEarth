@@ -9,7 +9,7 @@ class Pipe final : public eq::Pipe
 public:
     explicit Pipe( eq::Node* parent );
 
-    static lunchbox::SpinLock *getPipeLock( ) { return &_pipeLock; };
+    static std::mutex *getPipeLock( ) { return &_pipeLock; };
 
 protected:
     virtual ~Pipe( );
@@ -28,6 +28,6 @@ protected:
 private:
     void cleanup( );
 
-    static lunchbox::SpinLock _pipeLock;
+    static std::mutex _pipeLock;
 };
 }

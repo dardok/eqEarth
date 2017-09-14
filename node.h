@@ -52,7 +52,7 @@ protected:
     FrameData _frameData;
     uint32_t _frameNumber;
 
-    mutable lunchbox::SpinLock _viewer_lock;
+    mutable std::mutex _viewer_lock;
     osg::ref_ptr< CompositeViewer > _viewer;
 
 public:
