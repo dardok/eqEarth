@@ -12,8 +12,8 @@ View::View( eq::Layout* parent )
     , _viewMatrix( eq::Matrix4f( ))
     , _near( 0.01 ), _far( 100.0 )
     , _lat( 0.0 ), _lon( 0.0 )
-    , _origin( eq::Vector3f::ZERO )
-    , _direction( eq::Vector3f::ZERO )
+    , _origin( )
+    , _direction( )
 {
 LBINFO << "=====> View::View(" << (void *)this << ")" << std::endl;
 
