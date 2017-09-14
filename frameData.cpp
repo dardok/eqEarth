@@ -64,8 +64,6 @@ void FrameData::setZValue( float zvalue )
 
 void FrameData::serialize( co::DataOStream& os, const uint64_t dirtyBits )
 {
-    co::Serializable::serialize( os, dirtyBits );
-
     if( dirtyBits & DIRTY_TIME )
         os << _simulationTime << _calendarTime;
     if( dirtyBits & DIRTY_VIEW )
@@ -80,8 +78,6 @@ void FrameData::serialize( co::DataOStream& os, const uint64_t dirtyBits )
 
 void FrameData::deserialize( co::DataIStream& is, const uint64_t dirtyBits )
 {
-    co::Serializable::deserialize( is, dirtyBits );
-
     if( dirtyBits & DIRTY_TIME )
         is >> _simulationTime >> _calendarTime;
     if( dirtyBits & DIRTY_VIEW )
