@@ -74,8 +74,8 @@ private:
     View* _view;
     osg::ref_ptr< LonLatLabelControl > _ll;
     double _last_lat, _last_lon;
-    static lunchbox::Lock _update_lock;
+    static lunchbox::SpinLock _update_lock;
 };
 
-lunchbox::Lock ControlUpdateCallback::_update_lock;
+lunchbox::SpinLock ControlUpdateCallback::_update_lock;
 };

@@ -74,7 +74,7 @@ protected:
     osg::ref_ptr< osgUtil::IncrementalCompileOperation > _ico;
     osg::ref_ptr< osgDB::DatabasePager > _pager;
 
-    lunchbox::Lock _viewer_lock;
+    lunchbox::SpinLock _viewer_lock;
     osg::ref_ptr< CompositeViewer > _viewer;
     osg::ref_ptr< osgGA::EventQueue > _eventQueue;
 
