@@ -10,6 +10,8 @@
 #include "viewer.h"
 #include "util.h"
 
+#include <osg/CullFace>
+
 #include <GL/glu.h>
 
 namespace eqEarth
@@ -53,13 +55,9 @@ LBINFO << "-----> Channel::configInit(" << initID <<
     {
         osg::ref_ptr< osg::GraphicsContext > gc =
             static_cast< Window* >( getWindow( ))->getGraphicsContext( );
-/*
-        osg::StateSet *ss;
-*/
 
         _camera = new osg::Camera;
-//        _camera->setClearColor( osg::Vec4( 1.0f, 1.0f, 1.0f, 0.5f ));
-        _camera->setClearColor( osg::Vec4( 0.0f, 0.0f, 0.0f, 1.0f ));
+        _camera->setClearMask( 0 );
         _camera->setColorMask( new osg::ColorMask );
         _camera->setViewport( new osg::Viewport );
         _camera->setGraphicsContext( gc );
@@ -71,11 +69,12 @@ LBINFO << "-----> Channel::configInit(" << initID <<
         _camera->setAllowEventFocus( false );
         _camera->setSmallFeatureCullingPixelSize( -1.0f );
 
-/*
-        ss = _camera->getOrCreateStateSet( );
-        ss->setMode( GL_LIGHTING, osg::StateAttribute::ON );
-*/
+        osg::StateSet* ss = _camera->getOrCreateStateSet( );
+        ss->setMode( GL_LIGHTING, osg::StateAttribute::OFF );
+        ss->setMode( GL_CULL_FACE, ( osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE ));
+        ss->setAttributeAndModes( new osg::CullFace( osg::CullFace::BACK ));
 
+#if 0
         if( isDestination( ) &&
                 ( std::string::npos == getNode( )->getName( ).find( "strad" )))
         {
@@ -124,6 +123,7 @@ LBINFO << "-----> Channel::configInit(" << initID <<
 
             camera->setThreadSafeRefUnref( true );
         }
+#endif
     }
 
     init = true;
@@ -199,8 +199,6 @@ LBINFO << "-----> Channel<" << getName( ) << ">::frameClear("
         gl2e->glUseProgram( 0 ); // Icky...
     }
 */
-    glEnable( GL_SCISSOR_TEST );
-
     eq::Channel::frameClear( frameID );
 
 LBINFO << "<----- Channel<" << getName( ) << ">::frameClear("
@@ -217,23 +215,10 @@ LBINFO << "-----> Channel<" << getName( ) << ">::frameDraw("
 
     connectCameraToScene( view->getSceneID( ));
 
-#if 1
     // Update near/far
     double near, far;
     view->getNearFar( near, far );
-/*
-    double r = far - near;
-
-    const eq::Range &range = getRange( );
-    near += r * range.start;
-    far = near + ( r * range.end );
-*/
-#if 1
-    setNearFar( near, 100000000 ); // TODO
-#else
     setNearFar( near, far );
-#endif
-#endif
 
     __applyBuffer( _camera );
     __applyViewport( _camera );

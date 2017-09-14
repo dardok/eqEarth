@@ -70,7 +70,7 @@ LBINFO << "<===== Window::~Window(" << (void *)this << ")" << std::endl;
 
 void Window::initCapabilities( osg::GraphicsContext* context )
 {
-    static lunchbox::Lock _wsiLock;
+    static lunchbox::SpinLock _wsiLock;
     static bool _initialized = false;
 
     lunchbox::ScopedWrite _mutex( &_wsiLock );

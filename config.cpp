@@ -250,7 +250,7 @@ LBINFO << "=====> Config::Config(" << (void *)this << ")" << std::endl;
     ds->setNumOfHttpDatabaseThreadsHint( 2 );
 #endif
 
-#if 0
+#if 1
     _ico = new osgUtil::IncrementalCompileOperation( );
     _ico->setTargetFrameRate( 60.0f );
 #endif

@@ -6,7 +6,7 @@ namespace eqEarth
 {
 // ----------------------------------------------------------------------------
 
-lunchbox::Lock Pipe::_pipeLock;
+lunchbox::SpinLock Pipe::_pipeLock;
 
 Pipe::Pipe( eq::Node* parent )
     : eq::Pipe( parent )

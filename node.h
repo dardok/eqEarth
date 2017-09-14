@@ -14,6 +14,8 @@ namespace eqEarth
 class Node final : public eq::Node
 {
 public:
+	using ScopedWrite = std::unique_lock<SpinLock>;
+
     explicit Node( eq::Config* parent );
 
 protected:
@@ -52,7 +54,7 @@ protected:
     FrameData _frameData;
     uint32_t _frameNumber;
 
-    mutable lunchbox::Lock _viewer_lock;
+    mutable lunchbox::SpinLock _viewer_lock;
     osg::ref_ptr< CompositeViewer > _viewer;
 
 public:
