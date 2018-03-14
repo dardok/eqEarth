@@ -11,6 +11,7 @@
 #include "util.h"
 
 #include <osg/CullFace>
+#include <osgEarth/Registry>
 
 #include <GL/glu.h>
 
@@ -579,7 +580,7 @@ void Channel::connectCameraToScene( const eq::uint128_t& id )
     {
         Node* node = static_cast< Node* >( getNode( ));
 
-        Window::initCapabilities( _camera->getGraphicsContext( ));
+        osgEarth::Registry::instance( )->getCapabilities( _camera->getGraphicsContext( ));
 
         if( eq::uint128_t( ) != _sceneID )
         {

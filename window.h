@@ -25,8 +25,6 @@ public:
     unsigned int getContextID( ) const
         { return _window->getState( )->getContextID( ); }
 
-    static void initCapabilities( osg::GraphicsContext* context );
-
 protected:
     virtual bool configInit( const eq::uint128_t& initID ) override;
     virtual bool configInitGL( const eq::uint128_t& initID ) override;

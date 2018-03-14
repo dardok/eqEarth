@@ -4,13 +4,13 @@
 #include "util.h"
 #include "vps.h"
 #include "callbacks.h"
-#include "window.h" // for Window::initCapabilities
 #if 0
 #include "configEvent.h"
 #endif
 #include "controls.h"
 
 #include "earthManipulator.h"
+#include <osgEarth/Registry>
 #include <osgEarth/TerrainEngineNode>
 #include <osgGA/TrackballManipulator>
 
@@ -232,7 +232,7 @@ LBINFO << "=====> Config::Config(" << (void *)this << ")" << std::endl;
     //srandom( time( NULL ));
     srandom( 1 );
 
-    osg::Referenced::setThreadSafeReferenceCounting( true );
+    //osg::Referenced::setThreadSafeReferenceCounting( true );
 
     //osg::Referenced::setDeleteHandler( new osg::DeleteHandler( 2 ));
 
@@ -1056,7 +1056,7 @@ LBINFO << "-----> Config<" << getName( ) << ">::appInitGL( )" << std::endl;
         _gc->getState( )->setMaxBufferObjectPoolSize(
             maxBufferObjectPoolSize );
 
-    Window::initCapabilities( _gc );
+    osgEarth::Registry::instance( )->getCapabilities( _gc );
 
 LBINFO << "<----- Config<" << getName( ) << ">::appInitGL( )" << std::endl;
 

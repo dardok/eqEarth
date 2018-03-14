@@ -10,53 +10,6 @@ namespace eqEarth
 {
 // ----------------------------------------------------------------------------
 
-struct WindowingSystem : public osg::GraphicsContext::WindowingSystemInterface
-{
-WindowingSystem( osg::GraphicsContext* context ) : _context( context ) { }
-
-virtual unsigned int getNumScreens(
-        const osg::GraphicsContext::ScreenIdentifier& screenIdentifier =
-            osg::GraphicsContext::ScreenIdentifier( ))
-{
-    LBUNIMPLEMENTED;
-    return 0;
-}
-
-virtual void getScreenSettings(
-        const osg::GraphicsContext::ScreenIdentifier& screenIdentifier,
-        osg::GraphicsContext::ScreenSettings& resolution )
-{
-    LBUNIMPLEMENTED;
-}
-
-virtual void enumerateScreenSettings(
-        const osg::GraphicsContext::ScreenIdentifier& screenIdentifier,
-        osg::GraphicsContext::ScreenSettingsList& resolutionList )
-{
-    LBUNIMPLEMENTED;
-}
-
-virtual osg::GraphicsContext* createGraphicsContext(
-        osg::GraphicsContext::Traits* traits )
-{
-    return _context.get( );
-}
-
-void initCapabilities( )
-{
-    osg::ref_ptr< osg::GraphicsContext::WindowingSystemInterface > original =
-        osg::GraphicsContext::getWindowingSystemInterface( );
-    osg::GraphicsContext::setWindowingSystemInterface( this );
-    osgEarth::Registry::instance( )->getCapabilities( );
-    osg::GraphicsContext::setWindowingSystemInterface( original );
-}
-
-private:
-    osg::observer_ptr< osg::GraphicsContext > _context;
-};
-
-// ----------------------------------------------------------------------------
-
 Window::Window( eq::Pipe* parent )
     : eq::Window( parent )
 {
@@ -66,21 +19,6 @@ LBINFO << "=====> Window::Window(" << (void *)this << ")" << std::endl;
 Window::~Window( )
 {
 LBINFO << "<===== Window::~Window(" << (void *)this << ")" << std::endl;
-}
-
-void Window::initCapabilities( osg::GraphicsContext* context )
-{
-    static std::mutex _wsiLock;
-    static bool _initialized = false;
-
-    lunchbox::ScopedWrite _mutex( &_wsiLock );
-    if( !_initialized )
-    {
-        // Hack to initialize osgEarth with an existing graphics context
-        osg::ref_ptr< WindowingSystem > wsi = new WindowingSystem( context );
-        wsi->initCapabilities( );
-        _initialized = true;
-    }
 }
 
 bool Window::configInit( const eq::uint128_t& initID )
@@ -149,7 +87,7 @@ LBINFO << "-----> Window::configInitGL(" << initID <<
         if( maxBufferObjectPoolSize > 0 )
             getState( )->setMaxBufferObjectPoolSize( maxBufferObjectPoolSize );
 
-        initCapabilities( _window );
+        osgEarth::Registry::instance( )->getCapabilities( _window );
     }
 
     init = true;
